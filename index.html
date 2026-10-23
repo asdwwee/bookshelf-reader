@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en" data-theme="paper">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bookshelf Reader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
+<style>
+/* ---- Themes: UI colors + the colors used inside the book page ---- */
+:root, [data-theme="paper"] {
+  --bg: #f4f1ea; --surface: #fffdf8; --text: #24211d; --muted: #7a746a; --border: #e5dfd3;
+  --accent: #b4532a; --accent-soft: #f4e4d8; --hl: #ffd966; --page: #fffdf8; --page-text: #2a2622;
+  --shadow: 0 1px 2px rgba(60,40,20,.06), 0 8px 24px rgba(60,40,20,.08);
+}
+[data-theme="sepia"] {
+  --bg: #eadfc8; --surface: #f6ecd8; --text: #3b2f22; --muted: #7d6a52; --border: #d9c8a9;
+  --accent: #9a5b2b; --accent-soft: #e8d3b2; --hl: #f2c35b; --page: #f6ecd8; --page-text: #433424;
+  --shadow: 0 1px 2px rgba(80,50,20,.08), 0 8px 24px rgba(80,50,20,.10);
+}
+[data-theme="sage"] {
+  --bg: #e6ece3; --surface: #f6f9f3; --text: #1f2a22; --muted: #627062; --border: #d0dacb;
+  --accent: #3f7a55; --accent-soft: #d6e7d8; --hl: #cde58f; --page: #f6f9f3; --page-text: #24302a;
+  --shadow: 0 1px 2px rgba(20,50,30,.06), 0 8px 24px rgba(20,50,30,.08);
+}
+[data-theme="dusk"] {
+  --bg: #1b1917; --surface: #252220; --text: #ece6dc; --muted: #a59d90; --border: #38332e;
+  --accent: #e39a6c; --accent-soft: #3d2c21; --hl: #8a6d1f; --page: #23201d; --page-text: #e2dacd;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+}
+[data-theme="midnight"] {
+  --bg: #0e1420; --surface: #161f31; --text: #dfe6f3; --muted: #8d9ab3; --border: #25314a;
+  --accent: #7aa2ff; --accent-soft: #1e2d50; --hl: #3d5ca6; --page: #131b2b; --page-text: #d3dbe9;
+  --shadow: 0 1px 2px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.4);
+}
+[data-theme="black"] {
+  --bg: #000; --surface: #0f0f0f; --text: #e8e8e8; --muted: #8a8a8a; --border: #232323;
+  --accent: #f0b35a; --accent-soft: #2b2110; --hl: #6b5313; --page: #000; --page-text: #d4d4d4;
+  --shadow: none;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, sans-serif; display: flex; flex-direction: column; transition: background .25s, color .25s; }
+button { font: inherit; color: inherit; }
+.serif { font-family: Literata, Georgia, serif; }
+
+/* ---- Header ---- */
+header { display: flex; align-items: center; gap: 12px; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--surface); position: relative; z-index: 10; }
+.brand { font: 600 19px Literata, Georgia, serif; display: flex; align-items: center; gap: 8px; margin-right: auto; }
+.brand svg { color: var(--accent); }
+.tabs { display: flex; gap: 2px; background: var(--bg); padding: 3px; border-radius: 10px; }
+.tab { background: none; border: 0; color: var(--muted); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-weight: 500; }
+.tab:hover { color: var(--text); }
+.tab[aria-selected="true"] { color: var(--text); background: var(--surface); box-shadow: var(--shadow); }
+.icon-btn { background: none; border: 1px solid var(--border); border-radius: 8px; width: 38px; height: 34px; cursor: pointer; display: grid; place-items: center; margin-left: auto; font: 600 15px Literata, serif; }
+.icon-btn:hover, .icon-btn[aria-expanded="true"] { background: var(--accent-soft); border-color: var(--accent); }
+@media (max-width: 560px) { .brand span { display: none; } header { padding: 8px 12px; } .tab { padding: 6px 10px; } }
+
+/* ---- Settings popover ---- */
+#settings { display: none; position: absolute; right: 16px; top: calc(100% + 8px); width: min(320px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 16px; }
+#settings.open { display: block; }
+#settings h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+#settings .group + .group { margin-top: 16px; }
+.swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.swatch { border: 2px solid var(--border); border-radius: 10px; padding: 8px 6px; cursor: pointer; font-size: 12px; text-align: center; }
+.swatch[aria-pressed="true"] { border-color: var(--accent); }
+.swatch i { display: block; height: 22px; border-radius: 6px; margin-bottom: 4px; font: 600 13px/22px Literata, serif; font-style: normal; }
+.seg { display: flex; background: var(--bg); border-radius: 9px; padding: 3px; gap: 2px; }
+.seg button { flex: 1; border: 0; background: none; padding: 6px; border-radius: 7px; cursor: pointer; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.stepper { display: flex; align-items: center; gap: 8px; }
+.stepper button { width: 40px; height: 34px; border: 1px solid var(--border); background: var(--bg); border-radius: 8px; cursor: pointer; font-family: Literata, serif; }
+.stepper output { flex: 1; text-align: center; font-weight: 600; }
+
+/* ---- Layout ---- */
+main { flex: 1; min-height: 0; overflow: auto; }
+body[data-view="reader"] main { overflow: hidden; }
+section { display: none; padding: 28px 24px 40px; max-width: 1180px; margin: 0 auto; }
+section.active { display: block; }
+@media (max-width: 560px) { section { padding: 20px 16px 32px; } }
+h2.section-title { font: 600 26px Literata, Georgia, serif; margin: 0; }
+.section-head { display: flex; align-items: center; gap: 12px; margin: 36px 0 18px; flex-wrap: wrap; }
+.section-head .count { color: var(--muted); }
+.section-head .spacer { flex: 1; }
+.btn { background: var(--accent); color: #fff; border: 0; padding: 9px 16px; border-radius: 9px; cursor: pointer; font-weight: 600; }
+.btn:hover { filter: brightness(1.08); }
+.btn.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.empty { color: var(--muted); text-align: center; padding: 48px 16px; }
+.bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.bar > div { height: 100%; background: var(--accent); border-radius: 3px; }
+
+/* ---- Library ---- */
+.hero { display: flex; gap: 28px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--shadow); }
+.hero .cover { width: 120px; flex: none; }
+.hero .eyebrow { color: var(--accent); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+.hero h3 { font: 600 26px/1.2 Literata, Georgia, serif; margin: 6px 0 2px; }
+.hero .author { color: var(--muted); margin: 0 0 16px; }
+.hero .bar { height: 7px; max-width: 420px; }
+.hero .meta { color: var(--muted); font-size: 13px; margin: 8px 0 16px; }
+@media (max-width: 560px) { .hero { flex-direction: column; align-items: flex-start; } .hero h3 { font-size: 22px; } }
+.cover { aspect-ratio: 2 / 3; border-radius: 6px 10px 10px 6px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,.12), 0 10px 24px rgba(0,0,0,.14); position: relative; background: var(--border); }
+.cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cover::after { content: ""; position: absolute; inset: 0 auto 0 0; width: 6px; background: linear-gradient(90deg, rgba(0,0,0,.18), transparent); }
+.gen { height: 100%; padding: 14% 12%; display: flex; flex-direction: column; justify-content: space-between; color: #fff8ee;
+  background: linear-gradient(155deg, hsl(var(--h) 42% 40%), hsl(calc(var(--h) + 35) 48% 22%)); }
+.gen span { font: 600 clamp(13px, 1.4vw, 17px)/1.25 Literata, Georgia, serif; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; }
+.gen small { font-size: 11px; opacity: .8; }
+.grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 28px 22px; }
+@media (max-width: 560px) { .grid { grid-template-columns: repeat(2, 1fr); gap: 20px 14px; } }
+.card { position: relative; }
+.card .open { all: unset; cursor: pointer; display: block; width: 100%; border-radius: 10px; }
+.card .open:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.card .cover { transition: transform .2s, box-shadow .2s; }
+.card .open:hover .cover { transform: translateY(-4px); box-shadow: 0 4px 8px rgba(0,0,0,.14), 0 18px 32px rgba(0,0,0,.18); }
+.card-title { font-weight: 600; margin-top: 12px; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.card-author { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card .mini { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.card .mini .bar { flex: 1; }
+.card .remove { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; opacity: 0; transition: opacity .15s; font-size: 16px; }
+.card:hover .remove, .card .remove:focus-visible { opacity: 1; }
+@media (hover: none) { .card .remove { opacity: .85; } }
+.dropzone { border: 2px dashed var(--border); border-radius: 18px; padding: 56px 20px; text-align: center; color: var(--muted); cursor: pointer; background: var(--surface); }
+.dropzone:hover { border-color: var(--accent); color: var(--text); }
+.dropzone b { display: block; font: 600 20px Literata, serif; color: var(--text); margin-bottom: 4px; }
+#dropOverlay { display: none; position: fixed; inset: 0; z-index: 50; background: color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter: blur(4px); place-items: center; }
+#dropOverlay div { border: 3px dashed var(--accent); border-radius: 24px; padding: 60px 80px; font: 600 24px Literata, serif; color: var(--text); background: var(--surface); }
+body.dragging #dropOverlay { display: grid; }
+
+/* ---- Reader ---- */
+#reader.active { display: flex; flex-direction: column; height: 100%; max-width: none; padding: 0; }
+#stage { flex: 1; min-height: 0; display: flex; align-items: stretch; background: var(--page); transition: background .25s; }
+.side { flex: 0 0 64px; border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 28px; opacity: .35; transition: opacity .15s; }
+.side:hover { opacity: 1; color: var(--accent); }
+@media (max-width: 560px) { .side { flex-basis: 32px; font-size: 20px; } }
+#viewer { flex: 1; min-width: 0; margin: 0 auto; padding: 28px 0 12px; max-width: 760px; }
+body[data-spread="two"] #viewer { max-width: 1400px; }
+#readerEmpty { margin: auto; color: var(--muted); text-align: center; }
+#readerEmpty b { display: block; font: 600 22px Literata, serif; color: var(--text); margin-bottom: 6px; }
+#readerFoot { display: flex; align-items: center; gap: 16px; padding: 10px 24px 12px; background: var(--page); color: var(--muted); font-size: 13px; transition: background .25s; }
+#chapter { flex: 0 1 30%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#pct { flex: 0 0 auto; min-width: 72px; text-align: right; font-variant-numeric: tabular-nums; }
+#seek { flex: 1; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; cursor: pointer; margin: 0;
+  background: linear-gradient(to right, var(--accent) var(--p, 0%), var(--border) var(--p, 0%)); }
+#seek::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 3px solid var(--page); }
+#seek::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 3px solid var(--page); }
+#seek:disabled { cursor: default; }
+@media (max-width: 560px) { #chapter { display: none; } #readerFoot { padding: 10px 16px; } }
+
+#quoteBox { display: none; position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%); width: min(540px, calc(100% - 32px)); background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: var(--shadow), 0 20px 50px rgba(0,0,0,.2); z-index: 20; }
+#quoteBox .label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
+#quoteBox blockquote { margin: 8px 0 12px; padding-left: 12px; border-left: 3px solid var(--hl); max-height: 110px; overflow: auto; font: italic 16px/1.5 Literata, Georgia, serif; }
+#quoteBox textarea { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 8px 10px; font: inherit; resize: vertical; }
+#quoteBox .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+
+/* ---- Quotes ---- */
+.filters { display: flex; gap: 10px; flex-wrap: wrap; }
+.filters input, .filters select { padding: 9px 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--text); font: inherit; }
+.filters input { flex: 1; min-width: 200px; }
+#quoteList { columns: 320px; column-gap: 18px; margin-top: 20px; }
+.quote { break-inside: avoid; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 18px 12px; margin-bottom: 18px; box-shadow: var(--shadow); position: relative; }
+.quote::before { content: "“"; position: absolute; top: -6px; left: 14px; font: 600 54px Literata, serif; color: var(--accent); opacity: .35; }
+.quote p { margin: 10px 0 0; font: 16px/1.6 Literata, Georgia, serif; }
+.quote .note { margin-top: 10px; padding: 8px 10px; background: var(--bg); border-radius: 8px; font-size: 14px; }
+.quote .src { margin-top: 12px; font-size: 13px; color: var(--muted); }
+.quote .src b { color: var(--text); font-weight: 600; }
+.quote .actions { display: flex; gap: 4px; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+.quote .actions button { border: 0; background: none; color: var(--muted); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.quote .actions button:hover { background: var(--accent-soft); color: var(--text); }
+.quote .actions .go { margin-right: auto; color: var(--accent); font-weight: 600; }
+
+#toast { position: fixed; bottom: 70px; left: 50%; transform: translate(-50%, 20px); background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 20px; font-size: 14px; opacity: 0; transition: .25s; pointer-events: none; z-index: 60; }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body data-view="library">
+<header>
+  <div class="brand"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/></svg><span>Bookshelf</span></div>
+  <nav class="tabs" aria-label="Sections">
+    <button class="tab" data-tab="library" aria-selected="true">Library</button>
+    <button class="tab" data-tab="reader" aria-selected="false">Reader</button>
+    <button class="tab" data-tab="quotes" aria-selected="false">Quotes</button>
+  </nav>
+  <button class="icon-btn" id="settingsBtn" aria-label="Theme and reading settings" aria-expanded="false" aria-controls="settings">Aa</button>
+  <div id="settings" role="dialog" aria-label="Theme and reading settings">
+    <div class="group"><h4>Theme</h4><div class="swatches" id="swatches"></div></div>
+    <div class="group"><h4>Text size</h4>
+      <div class="stepper"><button id="smaller" aria-label="Smaller text">A−</button><output id="sizeOut">100%</output><button id="bigger" aria-label="Larger text">A+</button></div></div>
+    <div class="group"><h4>Font</h4><div class="seg" id="fontSeg">
+      <button data-v="">Original</button><button data-v="Literata">Serif</button><button data-v="Inter">Sans</button></div></div>
+    <div class="group"><h4>Pages</h4><div class="seg" id="spreadSeg">
+      <button data-v="one">Single page</button><button data-v="two">Two pages</button></div></div>
+  </div>
+</header>
+
+<main>
+  <section id="library" class="active">
+    <div id="hero"></div>
+    <div class="section-head">
+      <h2 class="section-title">Your library</h2><span class="count" id="bookCount"></span><span class="spacer"></span>
+      <button class="btn" id="addBtn">+ Add books</button>
+    </div>
+    <ul class="grid" id="books"></ul>
+    <input id="file" type="file" accept=".epub,application/epub+zip" multiple hidden>
+  </section>
+
+  <section id="reader">
+    <div id="stage">
+      <button class="side" id="prev" aria-label="Previous page">‹</button>
+      <div id="viewer"><div id="readerEmpty"><b>No book open</b>Pick one from your library to start reading.</div></div>
+      <button class="side" id="next" aria-label="Next page">›</button>
+    </div>
+    <div id="readerFoot">
+      <span id="chapter"></span>
+      <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Reading progress" disabled>
+      <span id="pct"></span>
+    </div>
+  </section>
+
+  <section id="quotes">
+    <div class="section-head" style="margin-top:0">
+      <h2 class="section-title">Quotes</h2><span class="count" id="quoteCount"></span>
+    </div>
+    <div class="filters">
+      <input id="search" type="search" placeholder="Search quotes and notes…" aria-label="Search quotes">
+      <select id="bookFilter" aria-label="Filter by book"></select>
+    </div>
+    <div id="quoteList"></div>
+  </section>
+</main>
+
+<div id="quoteBox" role="dialog" aria-label="Save quote">
+  <div class="label">Save quote</div>
+  <blockquote id="quoteText"></blockquote>
+  <textarea id="quoteNote" rows="2" placeholder="Add a note (optional)"></textarea>
+  <div class="row"><button class="btn secondary" id="quoteCancel">Cancel</button><button class="btn" id="quoteSave">Save quote</button></div>
+</div>
+<div id="dropOverlay"><div>Drop to add to your library</div></div>
+<div id="toast" role="status"></div>
+
+<script>
+// ---- IndexedDB: books (incl. file bytes + cover) and quotes persist in this browser ----
+const dbp = new Promise((res, rej) => {
+  const r = indexedDB.open('bookshelf', 1);
+  r.onupgradeneeded = () => {
+    r.result.createObjectStore('books', { keyPath: 'id' });
+    r.result.createObjectStore('quotes', { keyPath: 'id' }).createIndex('bookId', 'bookId');
+  };
+  r.onsuccess = () => res(r.result);
+  r.onerror = () => rej(r.error);
+});
+async function tx(store, mode, fn) {
+  const db = await dbp;
+  return new Promise((res, rej) => {
+    const t = db.transaction(store, mode), req = fn(t.objectStore(store));
+    t.oncomplete = () => res(req && req.result);
+    t.onerror = () => rej(t.error);
+  });
+}
+const all = s => tx(s, 'readonly', o => o.getAll());
+const get = (s, id) => tx(s, 'readonly', o => o.get(id));
+const put = (s, v) => tx(s, 'readwrite', o => o.put(v));
+const del = (s, id) => tx(s, 'readwrite', o => o.delete(id));
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const root = document.documentElement;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1800); }
+
+// ---- Preferences (per-browser convenience; falls back to defaults) ----
+const THEMES = [['paper', 'Paper'], ['sepia', 'Sepia'], ['sage', 'Sage'], ['dusk', 'Dusk'], ['midnight', 'Midnight'], ['black', 'Black']];
+let prefs = { theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dusk' : 'paper', size: 110, font: 'Literata', spread: 'one' };
+try { Object.assign(prefs, JSON.parse(localStorage.getItem('bookshelf-prefs')) || {}); } catch {}
+function savePrefs() { try { localStorage.setItem('bookshelf-prefs', JSON.stringify(prefs)); } catch {} }
+
+$('swatches').innerHTML = THEMES.map(([id, name]) =>
+  `<button class="swatch" data-theme-id="${id}" data-theme="${id}" style="background:var(--surface);color:var(--text)"><i style="background:var(--page);color:var(--page-text);border:1px solid var(--border)">Aa</i>${name}</button>`).join('');
+
+function applyPrefs() {
+  root.dataset.theme = prefs.theme;
+  document.body.dataset.spread = prefs.spread;
+  document.querySelectorAll('.swatch').forEach(b => b.setAttribute('aria-pressed', b.dataset.themeId === prefs.theme));
+  document.querySelectorAll('#fontSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === prefs.font));
+  document.querySelectorAll('#spreadSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === prefs.spread));
+  $('sizeOut').textContent = prefs.size + '%';
+  styleBook();
+  savePrefs();
+}
+$('swatches').onclick = e => { const b = e.target.closest('.swatch'); if (b) { prefs.theme = b.dataset.themeId; applyPrefs(); } };
+$('fontSeg').onclick = e => { const b = e.target.closest('button'); if (b) { prefs.font = b.dataset.v; applyPrefs(); } };
+$('spreadSeg').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  prefs.spread = b.dataset.v; applyPrefs();
+  if (rendition && rendition.manager) { rendition.spread(prefs.spread === 'two' ? 'auto' : 'none'); setTimeout(() => rendition.resize(), 50); }
+};
+$('smaller').onclick = () => { prefs.size = Math.max(70, prefs.size - 10); applyPrefs(); };
+$('bigger').onclick = () => { prefs.size = Math.min(200, prefs.size + 10); applyPrefs(); };
+$('settingsBtn').onclick = e => { e.stopPropagation(); const open = $('settings').classList.toggle('open'); $('settingsBtn').setAttribute('aria-expanded', open); };
+document.addEventListener('click', e => { if (!e.target.closest('#settings')) { $('settings').classList.remove('open'); $('settingsBtn').setAttribute('aria-expanded', false); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('settings').classList.remove('open'); hideQuoteBox(); } });
+
+// ---- Tabs ----
+function show(tab) {
+  document.body.dataset.view = tab;
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
+  document.querySelectorAll('main > section').forEach(s => s.classList.toggle('active', s.id === tab));
+  if (tab === 'library') renderLibrary();
+  if (tab === 'quotes') renderQuotes();
+  if (tab === 'reader' && rendition && rendition.manager) rendition.resize();
+}
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => show(b.dataset.tab));
+
+// ---- Covers ----
+const coverUrls = new Map();
+function coverHTML(b) {
+  if (b.cover) {
+    if (!coverUrls.has(b.id)) coverUrls.set(b.id, URL.createObjectURL(b.cover));
+    return `<div class="cover"><img src="${coverUrls.get(b.id)}" alt=""></div>`;
+  }
+  let h = 0; for (const c of b.title) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return `<div class="cover"><div class="gen" style="--h:${h}"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div></div>`;
+}
+
+// ---- Library ----
+const fileInput = $('file');
+$('addBtn').onclick = () => fileInput.click();
+fileInput.onchange = () => { addFiles(fileInput.files); fileInput.value = ''; };
+let dragDepth = 0;
+const hasFiles = e => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+window.addEventListener('dragenter', e => { if (hasFiles(e)) { dragDepth++; document.body.classList.add('dragging'); } });
+window.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; document.body.classList.remove('dragging'); } });
+window.addEventListener('dragover', e => { if (hasFiles(e)) e.preventDefault(); });
+window.addEventListener('drop', e => {
+  if (!hasFiles(e)) return;
+  e.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging');
+  addFiles(e.dataTransfer.files);
+});
+
+async function addFiles(files) {
+  let added = 0;
+  for (const f of files) {
+    if (!/\.epub$/i.test(f.name)) { toast(`${f.name} is not an .epub file`); continue; }
+    try {
+      const data = await f.arrayBuffer();
+      const ep = ePub(data);
+      const meta = await ep.loaded.metadata;
+      let cover = null;
+      try { const u = await ep.coverUrl(); if (u) cover = await (await fetch(u)).blob(); } catch {}
+      ep.destroy();
+      await put('books', { id: crypto.randomUUID(), title: meta.title || f.name.replace(/\.epub$/i, ''), author: meta.creator || '',
+        data, cover, cfi: null, pct: 0, locations: null, added: Date.now() });
+      added++;
+    } catch (err) { toast(`Could not read ${f.name}`); console.error(err); }
+  }
+  if (added) toast(`Added ${added} book${added > 1 ? 's' : ''}`);
+  show('library');
+}
+
+async function renderLibrary() {
+  const books = (await all('books')).sort((a, b) => (b.opened || b.added) - (a.opened || a.added));
+  const last = books.find(b => b.opened && b.pct < 1);
+  $('hero').innerHTML = last ? `
+    <div class="hero">
+      ${coverHTML(last)}
+      <div>
+        <div class="eyebrow">Continue reading</div>
+        <h3>${esc(last.title)}</h3>
+        <p class="author">${esc(last.author)}</p>
+        <div class="bar"><div style="width:${last.pct * 100}%"></div></div>
+        <div class="meta">${Math.round(last.pct * 100)}% read${last.chapter ? ' · ' + esc(last.chapter) : ''}</div>
+        <button class="btn" data-open="${last.id}">Continue →</button>
+      </div>
+    </div>` : '';
+  $('bookCount').textContent = books.length ? `${books.length} book${books.length > 1 ? 's' : ''}` : '';
+  $('books').innerHTML = books.length ? books.map(b => `
+    <li class="card">
+      <button class="open" data-open="${b.id}" aria-label="Read ${esc(b.title)}">${coverHTML(b)}</button>
+      <div class="card-title">${esc(b.title)}</div>
+      <div class="card-author">${esc(b.author) || '&nbsp;'}</div>
+      <div class="mini"><div class="bar"><div style="width:${b.pct * 100}%"></div></div><span>${b.pct >= 1 ? 'Done' : Math.round(b.pct * 100) + '%'}</span></div>
+      <button class="remove" data-del="${b.id}" aria-label="Remove ${esc(b.title)}">×</button>
+    </li>`).join('')
+    : `<li style="grid-column:1/-1"><div class="dropzone" role="button" tabindex="0" id="dropzone"><b>Your shelf is empty</b>Drop .epub files anywhere on this page, or click to choose</div></li>`;
+  const dz = $('dropzone');
+  if (dz) { dz.onclick = () => fileInput.click(); dz.onkeydown = e => (e.key === 'Enter' || e.key === ' ') && fileInput.click(); }
+}
+$('library').onclick = async e => {
+  const open = e.target.closest('[data-open]'), rm = e.target.closest('[data-del]');
+  if (open) openBook(open.dataset.open);
+  if (rm && confirm('Remove this book and its quotes?')) {
+    for (const q of (await all('quotes')).filter(q => q.bookId === rm.dataset.del)) await del('quotes', q.id);
+    await del('books', rm.dataset.del);
+    if (current && current.id === rm.dataset.del) closeBook();
+    renderLibrary();
+  }
+};
+
+// ---- Reader ----
+let book = null, rendition = null, current = null, pendingCfi = null;
+const hls = new Set();
+const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap';
+
+function closeBook() {
+  if (book) book.destroy();
+  book = rendition = current = null;
+  hls.clear();
+  $('viewer').innerHTML = '<div id="readerEmpty"><b>No book open</b>Pick one from your library to start reading.</div>';
+  $('chapter').textContent = '';
+  setProgress(0, '');
+  $('seek').disabled = true;
+}
+
+function setProgress(p, label) {
+  $('seek').value = Math.round(p * 1000);
+  $('seek').style.setProperty('--p', (p * 100) + '%');
+  $('pct').textContent = label;
+}
+
+// Push the current theme/font/size into the book's iframe.
+function styleBook() {
+  if (!rendition) return;
+  const cs = getComputedStyle(root), v = n => cs.getPropertyValue(n).trim();
+  rendition.themes.override('color', v('--page-text'), true);
+  rendition.themes.override('background', v('--page'), true);
+  rendition.themes.override('font-family', prefs.font ? `${prefs.font}, Georgia, serif` : '', true);
+  rendition.themes.override('line-height', '1.7');
+  rendition.themes.fontSize(prefs.size + '%');
+  for (const cfi of hls) { rendition.annotations.remove(cfi, 'highlight'); addHighlight(cfi); }
+}
+
+function chapterOf(href) {
+  const item = book && book.navigation && book.navigation.get(href);
+  return item ? item.label.trim() : '';
+}
+
+async function openBook(id, cfi) {
+  closeBook();
+  current = await get('books', id);
+  current.opened = Date.now();
+  put('books', current);
+  show('reader');
+  $('viewer').innerHTML = '';
+  book = ePub(current.data);
+  rendition = book.renderTo('viewer', { width: '100%', height: '100%', spread: prefs.spread === 'two' ? 'auto' : 'none', minSpreadWidth: 900 });
+  rendition.hooks.content.register(c => c.addStylesheet(FONT_CSS));
+  rendition.on('relocated', onRelocated);
+  rendition.on('selected', onSelected);
+  rendition.on('keyup', onKey);
+  styleBook();
+
+  setProgress(current.pct, current.locations ? Math.round(current.pct * 100) + '%' : 'indexing…');
+  await rendition.display(cfi || current.cfi || undefined);
+  // Loading locations before the first display hangs epub.js 0.3.93.
+  if (current.locations) book.locations.load(current.locations);
+
+  for (const q of (await all('quotes')).filter(q => q.bookId === id)) { hls.add(q.cfi); addHighlight(q.cfi); }
+
+  const thisBook = book;
+  if (!current.locations) {
+    // Page-accurate % needs a location index; generate once per book, then cache it.
+    await book.locations.generate(1024);
+    if (thisBook !== book) return; // user opened another book meanwhile
+    current.locations = book.locations.save();
+    put('books', current);
+  }
+  $('seek').disabled = false;
+  const loc = rendition.currentLocation();
+  if (loc && loc.start) onRelocated(loc);
+}
+
+function onRelocated(loc) {
+  if (!current) return;
+  current.cfi = loc.start.cfi;
+  current.chapter = chapterOf(loc.start.href);
+  $('chapter').textContent = current.chapter;
+  if (book.locations.length()) {
+    current.pct = loc.atEnd ? 1 : book.locations.percentageFromCfi(loc.start.cfi);
+    setProgress(current.pct, Math.round(current.pct * 100) + '%');
+  }
+  put('books', current);
+}
+
+$('seek').oninput = () => $('seek').style.setProperty('--p', ($('seek').value / 10) + '%');
+$('seek').onchange = () => { if (book && book.locations.length()) rendition.display(book.locations.cfiFromPercentage($('seek').value / 1000)); };
+
+const ready = () => rendition && rendition.manager;
+const onKey = e => { if (!ready()) return; if (e.key === 'ArrowLeft') rendition.prev(); if (e.key === 'ArrowRight') rendition.next(); };
+document.addEventListener('keyup', e => { if (document.body.dataset.view === 'reader' && !/TEXTAREA|INPUT/.test(e.target.tagName)) onKey(e); });
+$('prev').onclick = () => ready() && rendition.prev();
+$('next').onclick = () => ready() && rendition.next();
+
+function addHighlight(cfi) {
+  rendition.annotations.highlight(cfi, {}, () => {}, 'hl', { fill: getComputedStyle(root).getPropertyValue('--hl').trim(), 'fill-opacity': '0.45', 'mix-blend-mode': 'normal' });
+}
+
+// ---- Quotes from selection ----
+async function onSelected(cfi, contents) {
+  const text = (await book.getRange(cfi)).toString().trim();
+  if (!text) return;
+  pendingCfi = { cfi, text, contents };
+  $('quoteText').textContent = text;
+  $('quoteNote').value = '';
+  $('quoteBox').style.display = 'block';
+}
+function hideQuoteBox() {
+  $('quoteBox').style.display = 'none';
+  if (pendingCfi) pendingCfi.contents.window.getSelection().removeAllRanges();
+  pendingCfi = null;
+}
+$('quoteCancel').onclick = hideQuoteBox;
+$('quoteSave').onclick = async () => {
+  if (!pendingCfi || !current) return;
+  await put('quotes', { id: crypto.randomUUID(), bookId: current.id, bookTitle: current.title, cfi: pendingCfi.cfi,
+    text: pendingCfi.text, note: $('quoteNote').value.trim(), chapter: current.chapter || '', pct: current.pct, created: Date.now() });
+  hls.add(pendingCfi.cfi);
+  addHighlight(pendingCfi.cfi);
+  hideQuoteBox();
+  toast('Quote saved');
+};
+
+// ---- Quotes tab ----
+async function renderQuotes() {
+  const allQs = await all('quotes');
+  const titles = [...new Set(allQs.map(q => q.bookTitle))].sort();
+  const sel = $('bookFilter'), chosen = titles.includes(sel.value) ? sel.value : '';
+  sel.innerHTML = '<option value="">All books</option>' + titles.map(t => `<option ${t === chosen ? 'selected' : ''}>${esc(t)}</option>`).join('');
+  const term = $('search').value.toLowerCase();
+  const qs = allQs
+    .filter(q => (!chosen || q.bookTitle === chosen) && (!term || (q.text + ' ' + q.note + ' ' + q.bookTitle).toLowerCase().includes(term)))
+    .sort((a, b) => b.created - a.created);
+  $('quoteCount').textContent = allQs.length ? `${allQs.length} saved` : '';
+  $('quoteList').innerHTML = qs.length ? qs.map(q => `
+    <article class="quote">
+      <p>${esc(q.text)}</p>
+      ${q.note ? `<div class="note">${esc(q.note)}</div>` : ''}
+      <div class="src"><b>${esc(q.bookTitle)}</b>${q.chapter ? ' · ' + esc(q.chapter) : ''} · ${new Date(q.created).toLocaleDateString()}</div>
+      <div class="actions">
+        <button class="go" data-go="${q.id}">Open in book →</button>
+        <button data-copy="${q.id}">Copy</button>
+        <button data-rm="${q.id}">Delete</button>
+      </div>
+    </article>`).join('')
+    : `<p class="empty">${allQs.length ? 'No matches.' : 'No quotes yet. Select text while reading to save one.'}</p>`;
+}
+$('search').oninput = renderQuotes;
+$('bookFilter').onchange = renderQuotes;
+$('quoteList').onclick = async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const q = await get('quotes', b.dataset.go || b.dataset.copy || b.dataset.rm);
+  if (b.dataset.go) openBook(q.bookId, q.cfi);
+  if (b.dataset.copy) { await navigator.clipboard.writeText(`“${q.text}” (${q.bookTitle})`); toast('Copied'); }
+  if (b.dataset.rm && confirm('Delete this quote?')) {
+    await del('quotes', q.id);
+    if (current && current.id === q.bookId && rendition) { rendition.annotations.remove(q.cfi, 'highlight'); hls.delete(q.cfi); }
+    renderQuotes();
+  }
+};
+
+applyPrefs();
+renderLibrary();
+</script>
+</body>
+</html>
