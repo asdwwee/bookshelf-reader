@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.0/dist/umd/supabase.min.js"></script>
 <style>
 /* ---- Themes: UI colors + the colors used inside the book page ---- */
 :root, [data-theme="paper"] {
@@ -255,6 +256,62 @@ body[data-margin="wide"] { --page-w: 600px; }
 .thumb .gen span, .thumb .gen small { display: none; }
 .kind { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
 
+/* ---- Book clubs ---- */
+.auth-card { max-width: 380px; margin: 32px auto; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--shadow); }
+.auth-card h2 { font: 600 24px Literata, Georgia, serif; margin: 0 0 4px; }
+.auth-card p { color: var(--muted); margin: 0 0 18px; }
+.auth-card .btn { width: 100%; }
+.form-error { color: #c0392b; font-size: 14px; min-height: 20px; margin: 6px 0; }
+.muted { color: var(--muted); font-size: 13px; }
+.club-grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.club-card { display: flex; gap: 14px; align-items: center; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; cursor: pointer; box-shadow: var(--shadow); }
+.club-card:hover { border-color: var(--accent); }
+.club-card h3 { margin: 0 0 2px; font: 600 17px Literata, Georgia, serif; }
+.club-card .cover { width: 54px; flex: none; }
+.club-card .gen span, .club-card .gen small { display: none; }
+.club-head { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.club-head > .cover { width: 100px; flex: none; }
+.club-head h2 { margin: 0 0 2px; font: 600 26px Literata, Georgia, serif; }
+.code { font: 600 15px ui-monospace, Consolas, monospace; letter-spacing: .15em; background: var(--accent-soft); padding: 4px 10px; border-radius: 8px; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); margin-top: 18px; }
+.panel h3 { margin: 0 0 10px; font: 600 18px Literata, Georgia, serif; display: flex; align-items: center; gap: 8px; }
+.panel h3 .count { font: 400 13px Inter, sans-serif; color: var(--muted); }
+.inline-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.inline-form input, .inline-form select { flex: 1 1 160px; min-width: 0; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; }
+.member { display: grid; grid-template-columns: 36px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
+.panel h3 + .member { border-top: 0; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; display: inline-grid; place-items: center; flex: none; color: #fff; font-weight: 600; background: hsl(var(--h) 45% 45%); position: relative; }
+.avatar.live::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px; border-radius: 50%; background: #2ecc71; border: 2px solid var(--surface); }
+.member .bar { position: relative; overflow: visible; margin: 6px 0 4px; }
+.member .bar .target { position: absolute; top: -3px; width: 2px; height: 11px; background: var(--text); opacity: .45; }
+.chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--bg); color: var(--muted); white-space: nowrap; }
+.chip.ahead { background: color-mix(in srgb, #2ecc71 20%, var(--surface)); color: color-mix(in srgb, #1e8449 80%, var(--text)); }
+.chip.behind { background: color-mix(in srgb, #e67e22 20%, var(--surface)); color: color-mix(in srgb, #a85507 80%, var(--text)); }
+.chip.ontrack { background: var(--accent-soft); color: var(--accent); }
+.plan-step { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--border); }
+.plan-step.current { font-weight: 600; }
+.plan-step .when { margin-left: auto; color: var(--muted); font-size: 13px; white-space: nowrap; }
+.feed-item { padding: 12px 0; border-top: 1px solid var(--border); }
+.feed-item .avatar { width: 26px; height: 26px; font-size: 12px; }
+.feed-item p { margin: 6px 0 2px; font: 15px/1.55 Literata, Georgia, serif; }
+#clubBar { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: var(--accent-soft); font-size: 13px; flex-wrap: wrap; }
+#clubBar[hidden] { display: none; }
+#clubBar b { font-family: Literata, Georgia, serif; font-size: 14px; }
+#clubBar .spacer { flex: 1; }
+#clubBar .btn { padding: 5px 12px; }
+#together { position: absolute; left: 76px; top: 12px; z-index: 5; width: 240px; max-height: calc(100% - 24px); overflow: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 12px; font-size: 13px; }
+#together[hidden] { display: none; }
+#together h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.t-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+.t-row .avatar { width: 28px; height: 28px; font-size: 12px; }
+.t-row .who { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 560px) { #together { left: 8px; right: 8px; width: auto; top: 8px; max-height: 45%; } }
+#seekWrap { flex: 1; position: relative; display: flex; align-items: center; }
+#seekWrap #seek { width: 100%; }
+.mm { position: absolute; bottom: 12px; transform: translateX(-50%); width: 20px; height: 20px; border-radius: 50%; font-size: 10px; font-weight: 600; display: grid; place-items: center; color: #fff; background: hsl(var(--h) 45% 45%); border: 2px solid var(--page); pointer-events: none; }
+.pm { position: absolute; top: 50%; width: 3px; height: 16px; margin-top: -8px; border-radius: 2px; background: var(--text); opacity: .45; transform: translateX(-1px); pointer-events: none; }
+@media (max-width: 560px) { .tab { padding: 6px 8px; } }
+
 #toast { position: fixed; bottom: 70px; left: 50%; transform: translate(-50%, 20px); background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 20px; font-size: 14px; opacity: 0; transition: .25s; pointer-events: none; z-index: 60; }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 </style>
@@ -266,6 +323,7 @@ body[data-margin="wide"] { --page-w: 600px; }
     <button class="tab" data-tab="library" aria-selected="true">Library</button>
     <button class="tab" data-tab="reader" aria-selected="false">Reader</button>
     <button class="tab" data-tab="quotes" aria-selected="false">Quotes</button>
+    <button class="tab" data-tab="clubs" aria-selected="false">Clubs</button>
   </nav>
   <button class="icon-btn" id="settingsBtn" aria-label="Theme and reading settings" aria-expanded="false" aria-controls="settings">Aa</button>
   <div id="settings" role="dialog" aria-label="Theme and reading settings">
@@ -298,7 +356,9 @@ body[data-margin="wide"] { --page-w: 600px; }
   </section>
 
   <section id="reader">
+    <div id="clubBar" hidden></div>
     <div id="stage">
+      <div id="together" hidden></div>
       <button class="side" id="prev" aria-label="Previous page">‹</button>
       <div id="viewer"><div id="readerEmpty"><b>No book open</b>Pick one from your library to start reading.</div></div>
       <button class="side" id="next" aria-label="Next page">›</button>
@@ -310,7 +370,7 @@ body[data-margin="wide"] { --page-w: 600px; }
     </div>
     <div id="readerFoot">
       <span id="chapter"></span>
-      <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Reading progress" disabled>
+      <div id="seekWrap"><input id="seek" type="range" min="0" max="1000" value="0" aria-label="Reading progress" disabled></div>
       <span id="pct"></span>
     </div>
   </section>
@@ -325,6 +385,8 @@ body[data-margin="wide"] { --page-w: 600px; }
     </div>
     <div id="quoteList"></div>
   </section>
+
+  <section id="clubs"><div id="clubsView"></div></section>
 </main>
 
 <div id="quoteBox" role="dialog" aria-label="Save quote">
@@ -546,6 +608,8 @@ function show(tab) {
   document.querySelectorAll('main > section').forEach(s => s.classList.toggle('active', s.id === tab));
   if (tab === 'library') renderLibrary();
   if (tab === 'quotes') renderQuotes();
+  if (tab === 'clubs') renderClubs();
+  if (rc) updatePresence({ reading: tab === 'reader' });
   if (tab === 'reader' && rendition && rendition.manager) rendition.resize();
 }
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => show(b.dataset.tab));
@@ -584,19 +648,24 @@ window.addEventListener('drop', e => {
   addFiles(e.dataTransfer.files);
 });
 
+async function parseEpub(data) {
+  const ep = ePub(data);
+  const meta = await ep.loaded.metadata;
+  let cover = null;
+  try { const u = await ep.coverUrl(); if (u) cover = await (await fetch(u)).blob(); } catch {}
+  ep.destroy();
+  return { title: meta.title || '', author: meta.creator || '', cover };
+}
+
 async function addFiles(files) {
   let added = 0;
   for (const f of files) {
     if (!/\.epub$/i.test(f.name)) { toast(`${f.name} is not an .epub file`); continue; }
     try {
       const data = await f.arrayBuffer();
-      const ep = ePub(data);
-      const meta = await ep.loaded.metadata;
-      let cover = null;
-      try { const u = await ep.coverUrl(); if (u) cover = await (await fetch(u)).blob(); } catch {}
-      ep.destroy();
-      await put('books', { id: crypto.randomUUID(), title: meta.title || f.name.replace(/\.epub$/i, ''), author: meta.creator || '',
-        data, cover, cfi: null, pct: 0, locations: null, added: Date.now() });
+      const meta = await parseEpub(data);
+      await put('books', { id: crypto.randomUUID(), title: meta.title || f.name.replace(/\.epub$/i, ''), author: meta.author,
+        data, cover: meta.cover, cfi: null, pct: 0, locations: null, added: Date.now() });
       added++;
     } catch (err) { toast(`Could not read ${f.name}`); console.error(err); }
   }
@@ -605,7 +674,7 @@ async function addFiles(files) {
 }
 
 async function renderLibrary() {
-  const books = (await all('books')).sort((a, b) => (b.opened || b.added) - (a.opened || a.added));
+  const books = (await all('books')).filter(b => !b.clubId).sort((a, b) => (b.opened || b.added) - (a.opened || a.added)); // club copies live under Clubs
   const last = books.find(b => b.opened && b.pct < 1);
   $('hero').innerHTML = last ? `
     <div class="hero">
@@ -651,6 +720,7 @@ const hls = new Map(); // highlighted cfi -> color ('' = theme highlight)
 const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap';
 
 function closeBook() {
+  leaveClubReading();
   if (book) book.destroy();
   book = rendition = current = null;
   hls.clear();
@@ -692,6 +762,7 @@ async function openBook(id, cfi) {
   current = await get('books', id);
   current.opened = Date.now();
   put('books', current);
+  if (current.clubId) await enterClubReading(current.clubId);
   show('reader');
   $('viewer').innerHTML = '';
   book = ePub(current.data);
@@ -712,6 +783,7 @@ async function openBook(id, cfi) {
   if (current.locations) book.locations.load(current.locations);
 
   for (const q of (await all('quotes')).filter(q => q.bookId === id)) { hls.set(q.cfi, q.color || ''); addHighlight(q.cfi, q.color); }
+  applyClubNotes();
 
   const thisBook = book;
   if (!current.locations) {
@@ -736,6 +808,12 @@ function onRelocated(loc) {
     setProgress(current.pct, Math.round(current.pct * 100) + '%');
   }
   put('books', current);
+  if (rc) {
+    rc.lastActive = Date.now();
+    updatePresence({ pct: current.pct || 0, chapter: current.chapter || '' });
+    pushClubProgress();
+    renderClubReading();
+  }
 }
 
 $('seek').oninput = () => $('seek').style.setProperty('--p', ($('seek').value / 10) + '%');
@@ -830,6 +908,7 @@ async function placeMark(c, x, y, spec) {
   await put('marks', m);
   marks.push(m);
   drawMarks(c);
+  clubShare(m.bookId, { id: m.id, kind: 'sticker', cfi: m.cfi, emoji: m.emoji, word: m.word, chapter: m.chapter, pct: current.pct });
   toast(`${m.emoji} added`);
 }
 
@@ -855,25 +934,30 @@ let editingMark = null;
 function openMark(id, fresh) {
   editingMark = fresh || marks.find(m => m.id === id);
   if (!editingMark) return;
-  const note = editingMark.kind === 'note';
-  $('mdTitle').textContent = note ? `${fresh ? 'New note' : 'Note'} on “${editingMark.word}”` : `Sticker ${editingMark.emoji} on “${editingMark.word}”`;
-  $('mdText').hidden = $('mdSave').hidden = !note;
+  const note = editingMark.kind === 'note', other = editingMark.readonly; // another club member's mark
+  $('mdTitle').textContent = (other ? `${editingMark.author}'s ` : '') +
+    (note ? `${fresh ? 'New note' : other ? 'note' : 'Note'} on “${editingMark.word}”` : `${other ? 'sticker' : 'Sticker'} ${editingMark.emoji} on “${editingMark.word}”`);
+  $('mdText').hidden = !note;
+  $('mdSave').hidden = !note || other;
+  $('mdText').readOnly = other;
   $('mdText').value = editingMark.text || '';
-  $('mdDelete').hidden = !!fresh;
+  $('mdDelete').hidden = !!fresh || other;
   $('markDialog').showModal();
 }
 $('mdCancel').onclick = () => $('markDialog').close();
 $('markForm').onsubmit = async () => {
   const m = editingMark;
   m.text = $('mdText').value.trim();
-  if (!m.text) return; // an empty note isn't saved
+  if (!m.text || m.readonly) return; // an empty note isn't saved
   await put('marks', m);
   if (!marks.includes(m)) marks.push(m);
   redrawMarks();
+  clubShare(m.bookId, { id: m.id, kind: 'note', cfi: m.cfi, text: m.text, emoji: m.emoji, word: m.word, chapter: m.chapter, pct: current && current.pct });
   toast('Note saved');
 };
 $('mdDelete').onclick = async () => {
   await del('marks', editingMark.id);
+  clubUnshare(editingMark.bookId, editingMark.id);
   marks = marks.filter(m => m.id !== editingMark.id);
   redrawMarks();
   $('markDialog').close();
@@ -902,8 +986,10 @@ function hideQuoteBox() {
 $('quoteCancel').onclick = hideQuoteBox;
 $('quoteSave').onclick = async () => {
   if (!pendingCfi || !current) return;
-  await put('quotes', { id: crypto.randomUUID(), bookId: current.id, bookTitle: current.title, cfi: pendingCfi.cfi,
-    text: pendingCfi.text, note: $('quoteNote').value.trim(), chapter: current.chapter || '', pct: current.pct, color: prefs.hl, created: Date.now() });
+  const q = { id: crypto.randomUUID(), bookId: current.id, bookTitle: current.title, cfi: pendingCfi.cfi,
+    text: pendingCfi.text, note: $('quoteNote').value.trim(), chapter: current.chapter || '', pct: current.pct, color: prefs.hl, created: Date.now() };
+  await put('quotes', q);
+  clubShare(q.bookId, { id: q.id, kind: 'quote', cfi: q.cfi, text: q.text, note: q.note, color: q.color || null, chapter: q.chapter, pct: q.pct });
   hls.set(pendingCfi.cfi, prefs.hl);
   addHighlight(pendingCfi.cfi, prefs.hl);
   hideQuoteBox();
@@ -952,6 +1038,7 @@ $('quoteList').onclick = async e => {
   if (b.dataset.copy) { await navigator.clipboard.writeText(store === 'marks' ? `${q.text} (note on “${q.word}”, ${q.bookTitle})` : `“${q.text}” (${q.bookTitle})`); toast('Copied'); }
   if (b.dataset.rm && confirm(store === 'marks' ? 'Delete this note?' : 'Delete this quote?')) {
     await del(store, q.id);
+    clubUnshare(q.bookId, q.id);
     if (current && current.id === q.bookId && rendition) {
       if (store === 'quotes') { rendition.annotations.remove(q.cfi, 'highlight'); hls.delete(q.cfi); }
       else { marks = marks.filter(m => m.id !== q.id); redrawMarks(); }
@@ -959,6 +1046,466 @@ $('quoteList').onclick = async e => {
     renderQuotes();
   }
 };
+
+// ===================== Book clubs (Supabase) =====================
+const SB_URL = 'https://ylxklberqrdketqvbikv.supabase.co';
+const SB_KEY = 'sb_publishable_A7ApiBmez8d1z27S5jVLkA_7R8mpJWX'; // publishable key: meant for browsers; row-level security guards the data
+const sb = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null;
+let me = null;       // { id, name } of the signed-in reader
+let clubView = null; // club id open in the Clubs tab (null = list)
+let rc = null;       // club state while reading a club's book
+let wantTogether = false;
+const clubIdOf = bookId => bookId && bookId.startsWith('club-') ? bookId.slice(5) : null;
+const hue = s => { let h = 0; for (const c of s || '?') h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
+const avatar = (name, live) => `<span class="avatar${live ? ' live' : ''}" style="--h:${hue(name)}" title="${esc(name)}">${esc([...(name || '?')][0].toUpperCase())}</span>`;
+const fmtTime = s => { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h}h ${m}m` : `${m}m`; };
+const fmtDay = d => new Date(d + 'T00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
+const currentStep = plan => plan.find(s => s.due >= today()) || plan[plan.length - 1] || null;
+function standing(pct, target) {
+  if (target == null) return ['', ''];
+  const d = pct - target;
+  if (Math.abs(d) < 0.02) return ['On track', 'ontrack'];
+  return d > 0 ? [`${Math.round(d * 100)}% ahead`, 'ahead'] : [`${Math.round(-d * 100)}% behind`, 'behind'];
+}
+
+// Accounts are just name + password: the name is hashed into a private sign-in address Supabase needs.
+async function nameEmail(name) {
+  const h = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(name.trim().toLowerCase())));
+  return 'u' + [...h.slice(0, 16)].map(b => b.toString(16).padStart(2, '0')).join('') + '@bookshelf-reader.app';
+}
+async function loadMe() {
+  if (!sb) return null;
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return (me = null);
+  const { data } = await sb.from('profiles').select('id,name,is_admin').eq('id', session.user.id).maybeSingle();
+  return (me = data || { id: session.user.id, name: session.user.user_metadata.name || 'Reader' });
+}
+
+async function renderClubs() {
+  const v = $('clubsView');
+  if (!sb) { v.innerHTML = '<p class="empty">Book clubs need an internet connection.</p>'; return; }
+  if (!me) await loadMe();
+  if (!me) return renderAuth(v, 'in');
+  return clubView ? renderClubDetail(v, clubView) : renderClubList(v);
+}
+
+function renderAuth(v, mode) {
+  const up = mode === 'up';
+  v.innerHTML = `<form class="auth-card" id="authForm">
+    <h2>${up ? 'Create account' : 'Sign in'}</h2>
+    <p>${up ? 'Accounts are invite-only. Ask the club admin for an invite code.' : 'Read with friends: shared progress, a reading plan, and each other\'s notes.'}</p>
+    ${up ? '<label class="field">Invite code <input id="aInvite" required maxlength="16" autocomplete="off" style="text-transform:uppercase"></label>' : ''}
+    <label class="field">Name <input id="aName" autocomplete="username" required minlength="2" maxlength="30"></label>
+    <label class="field">Password <input id="aPass" type="password" autocomplete="${up ? 'new-password' : 'current-password'}" required minlength="6"></label>
+    <div class="form-error" id="aErr" role="alert"></div>
+    <button class="btn">${up ? 'Create account' : 'Sign in'}</button>
+    <button type="button" class="link-btn" id="aSwitch">${up ? 'Have an account? Sign in' : 'New here? Create an account'}</button>
+  </form>`;
+  $('aSwitch').onclick = () => renderAuth(v, up ? 'in' : 'up');
+  $('authForm').onsubmit = async e => {
+    e.preventDefault();
+    const name = $('aName').value.trim(), password = $('aPass').value, err = $('aErr');
+    err.textContent = up ? 'Creating your account…' : 'Signing in…';
+    const email = await nameEmail(name);
+    const res = up ? await sb.auth.signUp({ email, password, options: { data: { name, invite: $('aInvite').value.trim().toUpperCase() } } })
+                   : await sb.auth.signInWithPassword({ email, password });
+    if (res.error) {
+      const m = res.error.message;
+      // The database rejects sign-ups without a valid invite; Supabase reports that as a generic database error.
+      err.textContent = /invite|database error/i.test(m) ? 'That invite code isn\'t valid or has already been used.'
+        : /registered|exists/i.test(m) ? 'That name is taken. Sign in, or pick another name.'
+        : /invalid login/i.test(m) ? 'Wrong name or password.' : /confirm/i.test(m) ? 'This account still needs email confirmation. Turn off "Confirm email" in Supabase.' : m;
+      return;
+    }
+    if (!res.data.session) { err.textContent = 'Account made, but Supabase still has "Confirm email" on. Turn it off, then sign in.'; return; }
+    await loadMe();
+    renderClubs();
+  };
+}
+
+async function renderClubList(v) {
+  const [clubsRes, mineRes, books] = await Promise.all([
+    sb.from('clubs').select('*, club_members(count)').order('created_at', { ascending: false }),
+    sb.from('club_progress').select('club_id,pct').eq('user_id', me.id),
+    all('books')]);
+  if (clubsRes.error) { v.innerHTML = `<p class="empty">Couldn't load clubs: ${esc(clubsRes.error.message)}</p>`; return; }
+  const pctOf = new Map((mineRes.data || []).map(p => [p.club_id, p.pct]));
+  const local = new Map(books.filter(b => b.clubId).map(b => [b.clubId, b]));
+  const own = books.filter(b => !b.clubId);
+  const clubs = clubsRes.data;
+  v.innerHTML = `
+    <div class="section-head" style="margin-top:0"><h2 class="section-title">Book clubs</h2><span class="count">Signed in as ${esc(me.name)}</span>
+      <span class="spacer"></span><button class="btn secondary" id="signOut">Sign out</button></div>
+    ${clubs.length ? `<ul class="club-grid">${clubs.map(c => {
+      const n = c.club_members[0] ? c.club_members[0].count : 1, p = pctOf.get(c.id) || 0;
+      const b = local.get(c.id) || { id: c.id, title: c.book_title || c.name, author: c.book_author || '' };
+      return `<li><button class="club-card" data-club="${c.id}">${coverHTML(b)}<div style="flex:1;min-width:0">
+        <h3>${esc(c.name)}</h3><div class="muted">${esc(c.book_title || 'No book yet')} · ${n} member${n === 1 ? '' : 's'}</div>
+        <div class="bar" style="margin:8px 0 4px"><div style="width:${p * 100}%"></div></div><div class="muted">You: ${Math.round(p * 100)}%</div></div></button></li>`;
+    }).join('')}</ul>` : '<p class="empty" style="padding:24px">You\'re not in any clubs yet. Join one with a code, or start your own.</p>'}
+    <div class="panel"><h3>Join a club</h3>
+      <form class="inline-form" id="joinForm"><input id="joinCode" placeholder="6-character invite code" maxlength="6" required aria-label="Invite code" style="text-transform:uppercase"><button class="btn">Join</button></form>
+      <div class="form-error" id="joinErr" role="alert"></div></div>
+    <div class="panel"><h3>Start a club</h3>
+      ${own.length ? `<form class="inline-form" id="newClubForm"><input id="ncName" placeholder="Club name" maxlength="60" required aria-label="Club name">
+        <select id="ncBook" aria-label="Book to read">${own.map(b => `<option value="${b.id}">${esc(b.title)}</option>`).join('')}</select><button class="btn">Create</button></form>
+        <p class="muted" style="margin:8px 0 0">You upload the book once; members get it from the club.</p>`
+        : '<p class="muted">Add a book to your Library first, then start a club with it.</p>'}
+      <div class="form-error" id="ncErr" role="alert"></div></div>
+    ${me.is_admin ? `<div class="panel" id="invitesPanel"><h3>Invites <span class="count">admin</span></h3>
+      <form class="inline-form" id="inviteForm"><input id="invNote" placeholder="Who is it for? (optional)" maxlength="80" aria-label="Invite note">
+        <label class="muted" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="invReusable"> Reusable (unlimited sign-ups)</label>
+        <button class="btn">Create invite</button></form>
+      <div id="inviteList" style="margin-top:8px"></div></div>` : ''}`;
+  if (me.is_admin) renderInvites();
+  $('signOut').onclick = async () => { leavePresence(); await sb.auth.signOut(); me = null; clubView = null; renderClubs(); };
+  v.querySelectorAll('[data-club]').forEach(b => b.onclick = () => { clubView = b.dataset.club; renderClubs(); });
+  $('joinForm').onsubmit = async e => {
+    e.preventDefault();
+    const { data, error } = await sb.rpc('join_club', { join_code: $('joinCode').value });
+    if (error) { $('joinErr').textContent = /no club/i.test(error.message) ? 'No club has that code.' : error.message; return; }
+    clubView = data.id; renderClubs();
+  };
+  if ($('newClubForm')) $('newClubForm').onsubmit = async e => {
+    e.preventDefault();
+    const err = $('ncErr'), btn = e.target.querySelector('button');
+    const b = await get('books', $('ncBook').value);
+    btn.disabled = true; err.textContent = 'Creating club and uploading the book…';
+    const { data: c, error } = await sb.rpc('create_club', { club_name: $('ncName').value });
+    if (error) { err.textContent = error.message; btn.disabled = false; return; }
+    const path = `${c.id}/book.epub`;
+    const up = await sb.storage.from('club-books').upload(path, new Blob([b.data], { type: 'application/epub+zip' }), { upsert: true, contentType: 'application/epub+zip' });
+    if (up.error) { err.textContent = `Club created, but the book upload failed: ${up.error.message}`; btn.disabled = false; return; }
+    await sb.from('clubs').update({ book_path: path, book_title: b.title, book_author: b.author }).eq('id', c.id);
+    await put('books', { ...b, id: 'club-' + c.id, clubId: c.id, cfi: null, pct: 0, opened: null, added: Date.now() });
+    clubView = c.id; renderClubs();
+  };
+}
+
+// Admins hand out one-time invite codes; each creates exactly one account.
+async function renderInvites() {
+  const { data, error } = await sb.from('invites').select('code, note, unlimited, uses, used_at, created_at, used:profiles!invites_used_by_fkey(name)').order('created_at', { ascending: false });
+  const list = $('inviteList');
+  if (!list) return;
+  if (error) { list.innerHTML = `<p class="form-error">${esc(error.message)}</p>`; return; }
+  list.innerHTML = data.length ? data.map(i => `<div class="plan-step">
+      <span class="code">${esc(i.code)}</span><span class="muted" style="flex:1;min-width:0">${esc(i.note)}</span>
+      ${i.used_at && !i.unlimited ? `<span class="chip ontrack">Used by ${esc(i.used ? i.used.name : 'someone')}</span>`
+        : `${i.unlimited ? `<span class="chip">Reusable · ${i.uses} sign-up${i.uses === 1 ? '' : 's'}</span>` : ''}
+           <button class="btn secondary" data-copyinv="${esc(i.code)}">Copy</button><button class="link-btn" data-delinv="${esc(i.code)}" aria-label="Delete invite ${esc(i.code)}" title="${i.unlimited ? 'Switch off this code' : 'Delete'}" style="padding:0 4px">✕</button>`}
+    </div>`).join('') : '<p class="muted">No invites yet. Create one, then send the code to a friend.</p>';
+  list.querySelectorAll('[data-copyinv]').forEach(b => b.onclick = async () => { await navigator.clipboard.writeText(b.dataset.copyinv); toast('Invite code copied'); });
+  list.querySelectorAll('[data-delinv]').forEach(b => b.onclick = async () => { await sb.from('invites').delete().eq('code', b.dataset.delinv); renderInvites(); });
+  $('inviteForm').onsubmit = async e => {
+    e.preventDefault();
+    const { error } = await sb.from('invites').insert({ note: $('invNote').value.trim(), unlimited: $('invReusable').checked, created_by: me.id });
+    if (error) return toast(error.message);
+    $('invNote').value = '';
+    $('invReusable').checked = false;
+    renderInvites();
+  };
+}
+
+// The club's book is downloaded once and kept in this browser.
+async function ensureClubBook(c) {
+  const have = await get('books', 'club-' + c.id);
+  if (have) return have;
+  if (!c.book_path) return null;
+  const { data: blob, error } = await sb.storage.from('club-books').download(c.book_path);
+  if (error) throw new Error(error.message);
+  const data = await blob.arrayBuffer(), meta = await parseEpub(data);
+  const rec = { id: 'club-' + c.id, clubId: c.id, title: c.book_title || meta.title, author: c.book_author || meta.author, cover: meta.cover,
+    data, cfi: null, pct: 0, locations: null, added: Date.now() };
+  await put('books', rec);
+  return rec;
+}
+
+async function fetchClub(id) {
+  const [c, mem, prog, plan, notes] = await Promise.all([
+    sb.from('clubs').select('*').eq('id', id).single(),
+    sb.from('club_members').select('user_id, profiles(name)').eq('club_id', id),
+    sb.from('club_progress').select('*').eq('club_id', id),
+    sb.from('club_plan').select('*').eq('club_id', id).order('due'),
+    sb.from('club_notes').select('*, profiles(name)').eq('club_id', id).order('created_at', { ascending: false }).limit(200)]);
+  for (const r of [c, mem, prog, plan, notes]) if (r.error) throw new Error(r.error.message);
+  return {
+    club: c.data,
+    names: new Map(mem.data.map(m => [m.user_id, m.profiles ? m.profiles.name : 'Reader'])),
+    progress: new Map(prog.data.map(p => [p.user_id, p])),
+    plan: plan.data,
+    notes: notes.data.map(n => ({ ...n, author: n.profiles ? n.profiles.name : 'Reader' })),
+  };
+}
+
+// One row per member: live position from "read together" presence when they're reading, else their last saved spot.
+function memberRows(d, clubId) {
+  const live = presenceReaders(clubId);
+  return [...d.names].map(([uid, name]) => {
+    const p = d.progress.get(uid) || {}, l = live.get(uid);
+    const mine = uid === me.id && rc && current && rc.id === clubId;
+    return { uid, name, live: !!l, pct: mine ? current.pct || 0 : l ? l.pct : p.pct || 0,
+      chapter: mine ? current.chapter : l ? l.chapter : p.chapter, seconds: mine ? rc.seconds : p.seconds || 0 };
+  }).sort((a, b) => b.pct - a.pct);
+}
+
+async function renderClubDetail(v, id) {
+  if (!v.querySelector('.club-head')) v.innerHTML = '<p class="empty">Loading club…</p>';
+  let d;
+  try { d = await fetchClub(id); } catch (e) {
+    v.innerHTML = `<p class="empty">Couldn't load this club (${esc(e.message)}). <button class="link-btn" id="backClubs">Back to clubs</button></p>`;
+    $('backClubs').onclick = () => { clubView = null; renderClubs(); };
+    return;
+  }
+  if (clubView !== id) return; // user navigated away while loading
+  if (!presence || presence.clubId !== id) joinPresence(id, { name: me.name, reading: false, pct: (d.progress.get(me.id) || {}).pct || 0, chapter: '' });
+  const { club: c, plan, notes } = d, owner = c.owner === me.id, step = currentStep(plan);
+  const local = await get('books', 'club-' + c.id);
+  const rows = memberRows(d, id), avg = rows.reduce((s, r) => s + r.pct, 0) / (rows.length || 1);
+  const myPct = (rows.find(r => r.uid === me.id) || {}).pct || 0;
+  v.innerHTML = `
+    <button class="link-btn" id="backClubs" style="padding:0 0 14px">← All clubs</button>
+    <div class="club-head">
+      ${coverHTML(local || { id: c.id, title: c.book_title || c.name, author: c.book_author || '' })}
+      <div style="flex:1;min-width:220px">
+        <h2>${esc(c.name)}</h2>
+        <div class="muted">${esc(c.book_title || 'No book yet')}${c.book_author ? ' · ' + esc(c.book_author) : ''}</div>
+        <div style="margin:10px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="muted">Invite code</span><span class="code">${esc(c.code)}</span><button class="btn secondary" id="copyCode">Copy</button></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${c.book_path ? '<button class="btn" id="readClub">Read</button><button class="btn secondary" id="readTogether">👥 Read together</button>' : ''}
+          <button class="btn danger" id="${owner ? 'delClub' : 'leaveClub'}">${owner ? 'Delete club' : 'Leave club'}</button></div>
+      </div>
+    </div>
+    ${step ? `<div class="panel" style="background:var(--accent-soft)"><b>📅 Club is reading:</b> ${esc(step.label)} · by ${fmtDay(step.due)}</div>` : ''}
+    <div class="panel"><h3>Members <span class="count">${rows.length}</span></h3>
+      ${rows.map(r => {
+        const [s, cls] = standing(r.pct, step ? step.target_pct : rows.length > 1 ? avg : null);
+        return `<div class="member">${avatar(r.name, r.live)}
+          <div style="min-width:0"><div><b>${esc(r.name)}</b>${r.uid === me.id ? ' <span class="muted">(you)</span>' : ''}${r.live ? ' <span class="muted">· reading now</span>' : ''}</div>
+            <div class="bar">${step ? `<span class="target" style="left:${step.target_pct * 100}%" title="Plan target"></span>` : ''}<div style="width:${r.pct * 100}%"></div></div>
+            <div class="muted">${Math.round(r.pct * 100)}%${r.chapter ? ' · ' + esc(r.chapter) : ''} · ⏱ ${fmtTime(r.seconds)}</div></div>
+          ${s ? `<span class="chip ${cls}">${s}</span>` : '<span></span>'}</div>`;
+      }).join('')}
+    </div>
+    <div class="panel"><h3>Reading plan</h3>
+      ${plan.length ? plan.map(s => `<div class="plan-step${s === step ? ' current' : ''}">
+        <span>${myPct >= s.target_pct - 0.005 ? '✅' : s.due < today() ? '⏰' : '📖'}</span><span>${esc(s.label)}</span>
+        <span class="when">by ${fmtDay(s.due)}</span>${owner ? `<button class="link-btn" data-delstep="${s.id}" aria-label="Remove ${esc(s.label)}" style="padding:0 4px">✕</button>` : ''}</div>`).join('')
+        : `<p class="muted">${owner ? 'Plan which chapters to read by when.' : 'No plan yet. The club owner can add one.'}</p>`}
+      ${owner && local ? `<form class="inline-form" id="planForm" style="margin-top:12px"><select id="planCh" aria-label="Read up to and including"><option>Loading chapters…</option></select>
+        <input id="planDue" type="date" required aria-label="Due date" min="${today()}"><button class="btn">Add</button></form><div class="form-error" id="planErr" role="alert"></div>` : ''}
+    </div>
+    <div class="panel"><h3>Club notes <span class="count">${notes.length}</span></h3>
+      ${notes.length ? notes.map(n => `<div class="feed-item">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${avatar(n.author)}<b>${esc(n.author)}</b>
+          <span class="muted">${n.kind === 'quote' ? 'quoted' : n.kind === 'note' ? `noted on “${esc(n.word || '')}”` : `stuck ${esc(n.emoji || '')} on “${esc(n.word || '')}”`}${n.chapter ? ' · ' + esc(n.chapter) : ''}</span></div>
+        ${n.text ? `<p>${n.kind === 'quote' ? '“' + esc(n.text) + '”' : esc(n.text)}</p>` : ''}${n.note ? `<div class="muted">${esc(n.note)}</div>` : ''}
+        <button class="link-btn" data-gonote="${esc(n.cfi)}" style="padding:4px 0 0">Open in book →</button></div>`).join('')
+        : '<p class="muted">Quotes, notes and stickers members add while reading show up here.</p>'}
+    </div>`;
+
+  $('backClubs').onclick = () => { clubView = null; if (!rc) leavePresence(); renderClubs(); };
+  $('copyCode').onclick = async () => { await navigator.clipboard.writeText(c.code); toast('Invite code copied'); };
+  if ($('readClub')) $('readClub').onclick = () => openClubBook(c, false);
+  if ($('readTogether')) $('readTogether').onclick = () => openClubBook(c, true);
+  v.querySelectorAll('[data-gonote]').forEach(b => b.onclick = () => openClubBook(c, false, b.dataset.gonote));
+  if ($('leaveClub')) $('leaveClub').onclick = async () => {
+    if (!confirm(`Leave “${c.name}”?`)) return;
+    await sb.from('club_members').delete().eq('club_id', c.id).eq('user_id', me.id);
+    leavePresence(); clubView = null; renderClubs();
+  };
+  if ($('delClub')) $('delClub').onclick = async () => {
+    if (!confirm(`Delete “${c.name}” for everyone? Members' progress and notes in it are removed too.`)) return;
+    if (c.book_path) await sb.storage.from('club-books').remove([c.book_path]);
+    const { error } = await sb.from('clubs').delete().eq('id', c.id);
+    if (error) return toast(error.message);
+    await del('books', 'club-' + c.id);
+    leavePresence(); clubView = null; renderClubs();
+  };
+  v.querySelectorAll('[data-delstep]').forEach(b => b.onclick = async () => {
+    await sb.from('club_plan').delete().eq('id', b.dataset.delstep);
+    renderClubDetail(v, id);
+  });
+  if ($('planForm')) setupPlanForm(c, local, () => renderClubDetail(v, id));
+}
+
+// Owner picks "read up to chapter X by date"; the target % is where the next chapter starts.
+async function setupPlanForm(c, local, done) {
+  const ep = ePub(local.data);
+  const nav = await ep.loaded.navigation;
+  const flat = [], walk = items => items.forEach(i => { flat.push(i); if (i.subitems) walk(i.subitems); });
+  walk(nav.toc);
+  $('planCh').innerHTML = flat.map(i => `<option value="${esc(i.href)}">Through ${esc(i.label.trim())}</option>`).join('') || '<option value="">Whole book</option>';
+  $('planForm').onsubmit = async e => {
+    e.preventDefault();
+    const err = $('planErr'), opt = $('planCh').selectedOptions[0];
+    err.textContent = 'Working out where that chapter ends…';
+    await ep.ready;
+    if (local.locations) ep.locations.load(local.locations);
+    else { await ep.locations.generate(1024); local.locations = ep.locations.save(); put('books', local); }
+    const sec = opt.value ? ep.spine.get(opt.value.split('#')[0]) : null;
+    const next = sec ? ep.spine.get(sec.index + 1) : null;
+    let target = next ? ep.locations.percentageFromCfi(`epubcfi(${next.cfiBase}!/4/1:0)`) : 1;
+    if (!(target >= 0 && target <= 1)) target = next ? next.index / ep.spine.spineItems.length : 1;
+    const { error } = await sb.from('club_plan').insert({ club_id: c.id, label: opt.textContent.replace(/^Through /, 'Read through '),
+      href: opt.value || null, target_pct: target, due: $('planDue').value });
+    if (error) { err.textContent = error.message; return; }
+    ep.destroy();
+    done();
+  };
+}
+
+async function openClubBook(c, together, cfi) {
+  try {
+    toast('Opening the club book…');
+    const rec = await ensureClubBook(c);
+    if (!rec) return toast('This club has no book yet');
+    wantTogether = together;
+    await openBook(rec.id, cfi);
+  } catch (e) { toast(`Couldn't get the book: ${e.message}`); }
+}
+
+// ---- Club reading mode: progress sync, plan banner, read-together panel, members' notes ----
+async function enterClubReading(clubId) {
+  if (!sb) return;
+  if (!me) await loadMe();
+  if (!me) { toast('Sign in on the Clubs tab to sync with your club'); return; }
+  let d;
+  try { d = await fetchClub(clubId); } catch { toast('Offline: club progress won\'t sync this time'); return; }
+  const mine = d.progress.get(me.id);
+  if (mine && mine.cfi && mine.pct > (current.pct || 0)) { current.cfi = mine.cfi; current.pct = mine.pct; } // further along on another device
+  rc = { id: clubId, d, seconds: mine ? mine.seconds : 0, lastActive: Date.now(), lastPush: 0 };
+  joinPresence(clubId, { name: me.name, reading: true, pct: current.pct || 0, chapter: current.chapter || '' });
+  $('together').hidden = !wantTogether;
+  wantTogether = false;
+  renderClubReading();
+}
+
+function leaveClubReading() {
+  if (!rc) return;
+  pushClubProgress(true);
+  rc = null;
+  if (clubView && presence && presence.clubId === clubView) updatePresence({ reading: false }); else leavePresence();
+  $('clubBar').hidden = $('together').hidden = true;
+  $('seekWrap').querySelectorAll('.mm,.pm').forEach(n => n.remove());
+}
+
+function pushClubProgress(force) {
+  if (!rc || !current || !me) return;
+  const now = Date.now();
+  if (!force && now - rc.lastPush < 15000) return;
+  rc.lastPush = now;
+  const row = { club_id: rc.id, user_id: me.id, cfi: current.cfi, pct: current.pct || 0, chapter: current.chapter || '', seconds: Math.round(rc.seconds), updated_at: new Date().toISOString() };
+  rc.d.progress.set(me.id, row);
+  sb.from('club_progress').upsert(row).then(({ error }) => { if (error) console.warn('club progress', error.message); });
+}
+
+// Reading time: adds real elapsed time while the reader is visible and you've turned a page or moved recently
+// (measured, not counted in ticks, so throttled timers don't undercount; gaps over 15s aren't counted).
+// shortcut: two devices reading at once each write their own total (last write wins); fine for a club tracker.
+let lastTick = Date.now();
+setInterval(() => {
+  const now = Date.now(), gap = now - lastTick;
+  lastTick = now;
+  if (!rc || document.hidden || document.body.dataset.view !== 'reader' || now - rc.lastActive > 180000 || gap > 15000) return;
+  rc.seconds += gap / 1000;
+  pushClubProgress();
+}, 5000);
+const bumpActive = () => { if (rc) rc.lastActive = Date.now(); };
+document.addEventListener('pointermove', bumpActive, { passive: true });
+document.addEventListener('keydown', bumpActive);
+document.addEventListener('visibilitychange', () => { if (document.hidden) pushClubProgress(true); });
+
+function renderClubReading() {
+  if (!rc) return;
+  const step = currentStep(rc.d.plan), [s, cls] = standing(current.pct || 0, step ? step.target_pct : null);
+  const rows = memberRows(rc.d, rc.id), others = rows.filter(r => r.uid !== me.id), liveN = others.filter(r => r.live).length;
+  const bar = $('clubBar');
+  bar.hidden = false;
+  bar.innerHTML = `<b>📚 ${esc(rc.d.club.name)}</b>
+    ${step ? `<span>Plan: ${esc(step.label)} by ${fmtDay(step.due)}</span>` : ''}
+    ${s ? `<span class="chip ${cls}">${s}</span>` : ''}
+    <span class="muted">⏱ ${fmtTime(rc.seconds)}</span><span class="spacer"></span>
+    <button class="btn secondary" id="togetherBtn" aria-expanded="${!$('together').hidden}">👥 Together${liveN ? ` · ${liveN} reading now` : ''}</button>`;
+  $('togetherBtn').onclick = () => { $('together').hidden = !$('together').hidden; renderClubReading(); };
+
+  const mine = current.pct || 0, p = $('together');
+  if (!p.hidden) {
+    p.innerHTML = `<h4>Reading together</h4>${rows.map(r => {
+      const dlt = Math.round((r.pct - mine) * 100);
+      const rel = r.uid === me.id ? 'you' : dlt > 0 ? `${dlt}% ahead of you` : dlt < 0 ? `${-dlt}% behind you` : 'same page as you';
+      return `<div class="t-row">${avatar(r.name, r.live)}<div class="who"><b>${esc(r.name)}</b>${r.live ? '' : ' <span class="muted">(away)</span>'}<div class="muted">${Math.round(r.pct * 100)}% · ${rel}</div></div></div>`;
+    }).join('')}
+    <label class="muted" style="display:flex;gap:6px;align-items:center;margin-top:10px"><input type="checkbox" id="showClubNotes" ${prefs.clubNotes !== false ? 'checked' : ''}> Show members' notes in the book</label>`;
+    $('showClubNotes').onchange = e => { prefs.clubNotes = e.target.checked; savePrefs(); applyClubNotes(); };
+  }
+
+  // Avatars of other members (and the plan target) sit on the progress bar.
+  const w = $('seekWrap');
+  w.querySelectorAll('.mm,.pm').forEach(n => n.remove());
+  if (step) w.insertAdjacentHTML('beforeend', `<span class="pm" style="left:${step.target_pct * 100}%" title="Plan: ${esc(step.label)}"></span>`);
+  w.insertAdjacentHTML('beforeend', others.map(r => `<span class="mm" style="left:${r.pct * 100}%;--h:${hue(r.name)}" title="${esc(r.name)}: ${Math.round(r.pct * 100)}%">${esc([...r.name][0].toUpperCase())}</span>`).join(''));
+}
+
+// Other members' quotes show as faint highlights; their notes (💬) and stickers as marks you can open.
+function applyClubNotes() {
+  if (!rc || !rendition) return;
+  marks = marks.filter(m => !m.readonly);
+  for (const n of rc.d.notes) if (n.user_id !== me.id && n.kind === 'quote' && !hls.has(n.cfi)) rendition.annotations.remove(n.cfi, 'highlight');
+  if (prefs.clubNotes !== false) for (const n of rc.d.notes) {
+    if (n.user_id === me.id) continue;
+    if (n.kind === 'quote') { if (!hls.has(n.cfi)) rendition.annotations.highlight(n.cfi, {}, () => {}, 'club-hl', { fill: n.color || '#9fd3ff', 'fill-opacity': '0.22', 'mix-blend-mode': 'normal' }); }
+    else marks.push({ id: n.id, cfi: n.cfi, kind: n.kind, emoji: n.kind === 'note' ? '💬' : n.emoji, text: n.text, word: n.word, readonly: true, author: n.author });
+  }
+  redrawMarks();
+}
+
+function clubShare(bookId, row) {
+  const cid = clubIdOf(bookId);
+  if (!cid || !sb || !me) return;
+  sb.from('club_notes').upsert({ ...row, club_id: cid, user_id: me.id }).then(({ error }) => { if (error) toast('Saved here, but couldn\'t share with the club'); });
+}
+function clubUnshare(bookId, id) {
+  if (clubIdOf(bookId) && sb && me) sb.from('club_notes').delete().eq('id', id).then(() => {});
+}
+
+// ---- Live presence ("read together"): one realtime channel per club ----
+let presence = null; // { clubId, ch, state, ready }
+let presenceRedraw = 0;
+function joinPresence(clubId, state) {
+  if (presence && presence.clubId !== clubId) leavePresence();
+  if (presence) return updatePresence(state);
+  const ch = sb.channel('club-' + clubId, { config: { presence: { key: me.id } } });
+  presence = { clubId, ch, state: { ...state }, ready: false };
+  ch.on('presence', { event: 'sync' }, () => {
+    if (rc) renderClubReading();
+    // Refresh the open club page, but not while someone is typing in one of its forms.
+    if (document.body.dataset.view === 'clubs' && clubView === clubId && !document.activeElement.closest('form') && Date.now() - presenceRedraw > 2000) {
+      presenceRedraw = Date.now();
+      renderClubDetail($('clubsView'), clubId);
+    }
+  });
+  ch.subscribe(status => { if (status === 'SUBSCRIBED' && presence && presence.ch === ch) { presence.ready = true; ch.track(presence.state); } });
+}
+function updatePresence(state) {
+  if (!presence) return;
+  Object.assign(presence.state, state);
+  if (presence.ready) presence.ch.track(presence.state);
+}
+function leavePresence() {
+  if (!presence) return;
+  sb.removeChannel(presence.ch);
+  presence = null;
+}
+function presenceReaders(clubId) {
+  const m = new Map();
+  if (!presence || presence.clubId !== clubId) return m;
+  for (const [key, metas] of Object.entries(presence.ch.presenceState())) {
+    const s = metas[metas.length - 1];
+    if (s && s.reading) m.set(key, s);
+  }
+  return m;
+}
 
 applyPrefs();
 renderLibrary();
