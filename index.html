@@ -60,7 +60,7 @@ header { display: flex; align-items: center; gap: 12px; padding: 10px 20px; bord
 @media (max-width: 560px) { .brand span { display: none; } header { padding: 8px 12px; } .tab { padding: 6px 10px; } }
 
 /* ---- Settings popover ---- */
-#settings { display: none; position: absolute; right: 16px; top: calc(100% + 8px); width: min(320px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 16px; }
+#settings { display: none; position: absolute; right: 16px; top: calc(100% + 8px); width: min(320px, calc(100vw - 32px)); max-height: calc(100vh - 80px); overflow: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 16px; }
 #settings.open { display: block; }
 #settings h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
 #settings .group + .group { margin-top: 16px; }
@@ -85,7 +85,7 @@ h2.section-title { font: 600 26px Literata, Georgia, serif; margin: 0; }
 .section-head { display: flex; align-items: center; gap: 12px; margin: 36px 0 18px; flex-wrap: wrap; }
 .section-head .count { color: var(--muted); }
 .section-head .spacer { flex: 1; }
-.btn { background: var(--accent); color: #fff; border: 0; padding: 9px 16px; border-radius: 9px; cursor: pointer; font-weight: 600; }
+.btn { background: var(--accent); color: var(--on-accent, #fff); border: 0; padding: 9px 16px; border-radius: 9px; cursor: pointer; font-weight: 600; }
 .btn:hover { filter: brightness(1.08); }
 .btn.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
 .empty { color: var(--muted); text-align: center; padding: 48px 16px; }
@@ -171,6 +171,34 @@ body[data-spread="two"] #viewer { max-width: 1400px; }
 .quote .actions button:hover { background: var(--accent-soft); color: var(--text); }
 .quote .actions .go { margin-right: auto; color: var(--accent); font-weight: 600; }
 
+/* ---- Theme maker ---- */
+.swatch.new i { border: 1px dashed var(--muted); color: var(--muted); }
+.link-btn { background: none; border: 0; color: var(--accent); cursor: pointer; padding: 10px 0 0; font-weight: 600; font-size: 13px; }
+#themeDialog { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--text); padding: 20px; width: min(460px, calc(100vw - 32px)); box-shadow: var(--shadow), 0 24px 60px rgba(0,0,0,.3); }
+#themeDialog::backdrop { background: rgba(0,0,0,.2); }
+#themeDialog h3 { margin: 0 0 14px; font: 600 20px Literata, Georgia, serif; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); font-weight: 500; margin-bottom: 12px; }
+.field input, .field select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; font-size: 15px; }
+.colors { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+@media (max-width: 420px) { .colors { grid-template-columns: 1fr; } }
+.color { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; font-size: 13px; }
+.color input { width: 32px; height: 32px; border: 0; padding: 0; background: none; cursor: pointer; flex: none; }
+.color input::-webkit-color-swatch-wrapper { padding: 0; }
+.color input::-webkit-color-swatch { border: 1px solid var(--border); border-radius: 8px; }
+.color input::-moz-color-swatch { border: 1px solid var(--border); border-radius: 8px; }
+.color span { flex: 1; }
+.color code { color: var(--muted); font-size: 11px; }
+.tpreview { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
+.tp-ui { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg); color: var(--text); }
+.tp-ui b { font-family: Literata, Georgia, serif; }
+.tp-ui small { color: var(--muted); margin-left: 6px; }
+.tp-btn { background: var(--accent); color: var(--on-accent, #fff); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.tp-page { background: var(--page); color: var(--page-text); padding: 14px; font: 15px/1.6 Literata, Georgia, serif; }
+.tp-page mark { background: color-mix(in srgb, var(--hl) 55%, transparent); color: inherit; }
+.dialog-row { display: flex; gap: 8px; align-items: center; }
+.dialog-row .spacer { flex: 1; }
+.btn.danger { background: none; color: #c0392b; border: 1px solid currentColor; }
+
 #toast { position: fixed; bottom: 70px; left: 50%; transform: translate(-50%, 20px); background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 20px; font-size: 14px; opacity: 0; transition: .25s; pointer-events: none; z-index: 60; }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 </style>
@@ -185,7 +213,8 @@ body[data-spread="two"] #viewer { max-width: 1400px; }
   </nav>
   <button class="icon-btn" id="settingsBtn" aria-label="Theme and reading settings" aria-expanded="false" aria-controls="settings">Aa</button>
   <div id="settings" role="dialog" aria-label="Theme and reading settings">
-    <div class="group"><h4>Theme</h4><div class="swatches" id="swatches"></div></div>
+    <div class="group"><h4>Theme</h4><div class="swatches" id="swatches"></div>
+      <button class="link-btn" id="editTheme" hidden>Edit this theme</button></div>
     <div class="group"><h4>Text size</h4>
       <div class="stepper"><button id="smaller" aria-label="Smaller text">A−</button><output id="sizeOut">100%</output><button id="bigger" aria-label="Larger text">A+</button></div></div>
     <div class="group"><h4>Font</h4><div class="seg" id="fontSeg">
@@ -240,6 +269,23 @@ body[data-spread="two"] #viewer { max-width: 1400px; }
 <div id="dropOverlay"><div>Drop to add to your library</div></div>
 <div id="toast" role="status"></div>
 
+<dialog id="themeDialog" aria-labelledby="tdTitle">
+  <form method="dialog" id="themeForm">
+    <h3 id="tdTitle">Create theme</h3>
+    <div class="tpreview" aria-hidden="true">
+      <div class="tp-ui"><span><b>Bookshelf</b><small>3 books</small></span><span class="tp-btn">Continue</span></div>
+      <div class="tp-page">It was a bright cold day in April, and <mark>the clocks were striking thirteen</mark>.</div>
+    </div>
+    <label class="field">Name <input id="tName" required maxlength="24"></label>
+    <label class="field">Start from <select id="tBase"></select></label>
+    <div class="colors" id="tColors"></div>
+    <div class="dialog-row">
+      <button type="button" class="btn danger" id="tDelete">Delete</button><span class="spacer"></span>
+      <button type="button" class="btn secondary" id="tCancel">Cancel</button><button class="btn" id="tSave">Save theme</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
 // ---- IndexedDB: books (incl. file bytes + cover) and quotes persist in this browser ----
 const dbp = new Promise((res, rej) => {
@@ -275,11 +321,53 @@ let prefs = { theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dusk'
 try { Object.assign(prefs, JSON.parse(localStorage.getItem('bookshelf-prefs')) || {}); } catch {}
 function savePrefs() { try { localStorage.setItem('bookshelf-prefs', JSON.stringify(prefs)); } catch {} }
 
-$('swatches').innerHTML = THEMES.map(([id, name]) =>
-  `<button class="swatch" data-theme-id="${id}" data-theme="${id}" style="background:var(--surface);color:var(--text)"><i style="background:var(--page);color:var(--page-text);border:1px solid var(--border)">Aa</i>${name}</button>`).join('');
+if (!Array.isArray(prefs.custom)) prefs.custom = [];
+
+// ---- Custom themes: 7 picked colors; muted/border/soft accent are derived from them ----
+const KEYS = [['bg', 'Background', '--bg'], ['surface', 'Panels & cards', '--surface'], ['text', 'Text', '--text'], ['accent', 'Accent', '--accent'],
+  ['page', 'Book page', '--page'], ['pageText', 'Book text', '--page-text'], ['hl', 'Highlight', '--hl']];
+const DERIVED = ['--muted', '--border', '--accent-soft', '--on-accent'];
+function hex6(c) {
+  c = c.trim().toLowerCase();
+  return /^#[0-9a-f]{3}$/.test(c) ? '#' + [...c.slice(1)].map(x => x + x).join('') : /^#[0-9a-f]{6}$/.test(c) ? c : '#888888';
+}
+function themeVars(t) {
+  const n = parseInt(t.accent.slice(1), 16), lum = (0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255;
+  const v = Object.fromEntries(KEYS.map(([k, , css]) => [css, t[k]]));
+  v['--muted'] = `color-mix(in srgb, ${t.text} 60%, ${t.bg})`;
+  v['--border'] = `color-mix(in srgb, ${t.text} 16%, ${t.bg})`;
+  v['--accent-soft'] = `color-mix(in srgb, ${t.accent} 20%, ${t.surface})`;
+  v['--on-accent'] = lum > 0.6 ? '#1a1a1a' : '#ffffff';
+  return v;
+}
+const varStyle = t => Object.entries(themeVars(t)).map(([k, v]) => `${k}:${v}`).join(';');
+function setThemeVars(t) {
+  for (const css of [...KEYS.map(k => k[2]), ...DERIVED]) root.style.removeProperty(css);
+  if (t) for (const [k, v] of Object.entries(themeVars(t))) root.style.setProperty(k, v);
+}
+// Built-in colors are read from their swatch, which carries that theme's data-theme.
+function readTheme(id) {
+  const custom = prefs.custom.find(t => t.id === id);
+  if (custom) return Object.fromEntries(KEYS.map(([k]) => [k, custom[k]]));
+  const cs = getComputedStyle(document.querySelector(`.swatch[data-theme-id="${id}"]`));
+  return Object.fromEntries(KEYS.map(([k, , css]) => [k, hex6(cs.getPropertyValue(css))]));
+}
+
+const swatchFace = '<i style="background:var(--page);color:var(--page-text);border:1px solid var(--border)">Aa</i>';
+function renderSwatches() {
+  $('swatches').innerHTML =
+    THEMES.map(([id, name]) => `<button class="swatch" data-theme-id="${id}" data-theme="${id}" style="background:var(--surface);color:var(--text)">${swatchFace}${name}</button>`).join('') +
+    prefs.custom.map(t => `<button class="swatch" data-theme-id="${t.id}" style="${varStyle(t)};background:var(--surface);color:var(--text)">${swatchFace}${esc(t.name)}</button>`).join('') +
+    `<button class="swatch new" id="newTheme" aria-label="Create a new theme"><i>+</i>Create</button>`;
+}
+renderSwatches();
 
 function applyPrefs() {
-  root.dataset.theme = prefs.theme;
+  const custom = prefs.custom.find(t => t.id === prefs.theme);
+  if (!custom && !THEMES.some(([id]) => id === prefs.theme)) prefs.theme = 'paper';
+  root.dataset.theme = custom ? 'custom' : prefs.theme;
+  setThemeVars(custom);
+  $('editTheme').hidden = !custom;
   document.body.dataset.spread = prefs.spread;
   document.querySelectorAll('.swatch').forEach(b => b.setAttribute('aria-pressed', b.dataset.themeId === prefs.theme));
   document.querySelectorAll('#fontSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === prefs.font));
@@ -288,7 +376,62 @@ function applyPrefs() {
   styleBook();
   savePrefs();
 }
-$('swatches').onclick = e => { const b = e.target.closest('.swatch'); if (b) { prefs.theme = b.dataset.themeId; applyPrefs(); } };
+$('swatches').onclick = e => {
+  const b = e.target.closest('.swatch'); if (!b) return;
+  if (b.id === 'newTheme') return openThemeEditor(null);
+  prefs.theme = b.dataset.themeId; applyPrefs();
+};
+$('editTheme').onclick = () => openThemeEditor(prefs.custom.find(t => t.id === prefs.theme));
+
+// ---- Theme editor dialog: previews live on the whole app; Cancel/Esc restores ----
+let editing = null;
+function previewTheme() {
+  root.dataset.theme = 'custom';
+  setThemeVars(editing);
+  styleBook();
+}
+function renderColorInputs() {
+  $('tColors').innerHTML = KEYS.map(([k, label]) =>
+    `<label class="color"><input type="color" data-k="${k}" value="${editing[k]}"><span>${label}</span><code>${editing[k]}</code></label>`).join('');
+}
+function openThemeEditor(t) {
+  const base = t ? t.id : prefs.theme;
+  editing = t ? { ...t } : { id: 'c-' + Date.now().toString(36), name: `My theme ${prefs.custom.length + 1}`, ...readTheme(base) };
+  $('tdTitle').textContent = t ? 'Edit theme' : 'Create theme';
+  $('tName').value = editing.name;
+  $('tBase').innerHTML = (t ? '<option value="">Keep current colors</option>' : '') +
+    [...THEMES, ...prefs.custom.filter(c => !t || c.id !== t.id).map(c => [c.id, c.name])]
+      .map(([id, name]) => `<option value="${id}" ${!t && id === base ? 'selected' : ''}>${esc(name)}</option>`).join('');
+  $('tDelete').hidden = !t;
+  renderColorInputs();
+  $('settings').classList.remove('open');
+  $('themeDialog').showModal();
+  previewTheme();
+}
+$('tBase').onchange = () => { if ($('tBase').value) { Object.assign(editing, readTheme($('tBase').value)); renderColorInputs(); previewTheme(); } };
+$('tColors').oninput = e => {
+  const k = e.target.dataset.k; if (!k) return;
+  editing[k] = e.target.value;
+  e.target.parentElement.querySelector('code').textContent = e.target.value;
+  previewTheme();
+};
+$('tCancel').onclick = () => $('themeDialog').close();
+$('themeForm').onsubmit = () => {
+  editing.name = $('tName').value.trim() || 'My theme';
+  const i = prefs.custom.findIndex(t => t.id === editing.id);
+  if (i >= 0) prefs.custom[i] = editing; else prefs.custom.push(editing);
+  prefs.theme = editing.id;
+  renderSwatches();
+  toast(`Theme “${editing.name}” saved`);
+};
+$('tDelete').onclick = () => {
+  if (!confirm(`Delete the theme “${editing.name}”?`)) return;
+  prefs.custom = prefs.custom.filter(t => t.id !== editing.id);
+  if (prefs.theme === editing.id) prefs.theme = 'paper';
+  renderSwatches();
+  $('themeDialog').close();
+};
+$('themeDialog').addEventListener('close', () => applyPrefs()); // restores the saved theme after Cancel/Esc too
 $('fontSeg').onclick = e => { const b = e.target.closest('button'); if (b) { prefs.font = b.dataset.v; applyPrefs(); } };
 $('spreadSeg').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
