@@ -119,7 +119,7 @@ h2.section-title { font: 600 26px Literata, Georgia, serif; margin: 0; }
 .card-author { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card .mini { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--muted); }
 .card .mini .bar { flex: 1; }
-.card .remove { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; opacity: 0; transition: opacity .15s; font-size: 16px; }
+.card .remove { position: absolute; top: 8px; left: 10px; width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; opacity: 0; transition: opacity .15s; font-size: 16px; }
 .card:hover .remove, .card .remove:focus-visible { opacity: 1; }
 @media (hover: none) { .card .remove { opacity: .85; } }
 .dropzone { border: 2px dashed var(--border); border-radius: 18px; padding: 56px 20px; text-align: center; color: var(--muted); cursor: pointer; background: var(--surface); }
@@ -131,12 +131,14 @@ body.dragging #dropOverlay { display: grid; }
 
 /* ---- Reader ---- */
 #reader.active { display: flex; flex-direction: column; height: 100%; max-width: none; padding: 0; }
-#stage { flex: 1; min-height: 0; display: flex; align-items: stretch; background: var(--page); transition: background .25s; }
+#stage { position: relative; flex: 1; min-height: 0; display: flex; align-items: stretch; background: var(--page); transition: background .25s; }
 .side { flex: 0 0 64px; border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 28px; opacity: .35; transition: opacity .15s; }
 .side:hover { opacity: 1; color: var(--accent); }
 @media (max-width: 560px) { .side { flex-basis: 32px; font-size: 20px; } }
-#viewer { flex: 1; min-width: 0; margin: 0 auto; padding: 28px 0 12px; max-width: 760px; }
-body[data-spread="two"] #viewer { max-width: 1400px; }
+#viewer { flex: 1; min-width: 0; margin: 0 auto; padding: 28px 0 12px; max-width: var(--page-w, 760px); }
+body[data-spread="two"] #viewer { max-width: calc(var(--page-w, 760px) * 1.85); }
+body[data-margin="narrow"] { --page-w: 960px; }
+body[data-margin="wide"] { --page-w: 600px; }
 #readerEmpty { margin: auto; color: var(--muted); text-align: center; }
 #readerEmpty b { display: block; font: 600 22px Literata, serif; color: var(--text); margin-bottom: 6px; }
 #readerFoot { display: flex; align-items: center; gap: 16px; padding: 10px 24px 12px; background: var(--page); color: var(--muted); font-size: 13px; transition: background .25s; }
@@ -199,6 +201,60 @@ body[data-spread="two"] #viewer { max-width: 1400px; }
 .dialog-row .spacer { flex: 1; }
 .btn.danger { background: none; color: #c0392b; border: 1px solid currentColor; }
 
+/* ---- Bookmarks: ribbon on covers + "saved your place" pop-down ---- */
+.ribbon-mark { position: absolute; top: -3px; right: 12px; width: 18px; height: 34px; z-index: 1; background: var(--accent);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%); box-shadow: 0 2px 4px rgba(0,0,0,.25); transform-origin: top center; }
+.ribbon-mark::after { content: "♥"; position: absolute; inset: 7px 0 auto; text-align: center; font-size: 9px; color: var(--on-accent, #fff); }
+.card .open:hover .ribbon-mark { animation: sway .9s ease-in-out; }
+#bookmark { position: fixed; top: 0; left: 50%; transform: translateX(-50%); z-index: 70; display: flex; align-items: flex-start; gap: 10px; pointer-events: none; }
+#bookmark:not(.show) { visibility: hidden; }
+#bookmark .ribbon { width: 46px; height: 90px; transform: translateY(-100%); background: var(--accent); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+  box-shadow: inset -6px 0 0 rgba(0,0,0,.08); display: grid; place-items: end center; color: var(--on-accent, #fff); font-size: 18px; padding-bottom: 26px; transform-origin: top center; }
+#bookmark .bm-text { white-space: nowrap; margin-top: 18px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 12px; padding: 8px 14px; box-shadow: var(--shadow); opacity: 0; }
+#bookmark .bm-text b { display: block; font-family: Literata, Georgia, serif; }
+#bookmark .bm-text small { color: var(--muted); }
+#bookmark.show .ribbon { animation: ribbon-drop 3.2s ease-in-out forwards; }
+#bookmark.show .bm-text { animation: bm-fade 3.2s ease-in-out forwards; }
+@keyframes ribbon-drop { 0% { transform: translateY(-100%); } 18% { transform: translateY(6%); } 24% { transform: translateY(-4%); } 30% { transform: none; }
+  40% { transform: rotate(4deg); } 52% { transform: rotate(-3deg); } 62%, 85% { transform: none; } 100% { transform: translateY(-100%); } }
+@keyframes bm-fade { 0%, 15% { opacity: 0; transform: translateY(-6px); } 25%, 82% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+@keyframes sway { 30% { transform: rotate(6deg); } 65% { transform: rotate(-4deg); } }
+@media (prefers-reduced-motion: reduce) { #bookmark.show .ribbon { animation: none; transform: none; } #bookmark.show .bm-text { animation: none; opacity: 1; } .card .open:hover .ribbon-mark { animation: none; } }
+
+/* ---- Annotation palette (drag onto the page, or tap then tap the text) ---- */
+#palette { position: absolute; right: 76px; top: 50%; transform: translateY(-50%); z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 6px; box-shadow: var(--shadow); }
+#palette[hidden] { display: none; }
+#paletteItems { display: flex; flex-direction: column; gap: 4px; }
+#palette.closed #paletteItems { display: none; }
+#palette button { width: 38px; height: 38px; border-radius: 50%; border: 0; background: none; cursor: grab; font-size: 19px; display: grid; place-items: center; }
+#palette button:hover, #palette button[aria-pressed="true"] { background: var(--accent-soft); }
+#paletteToggle { cursor: pointer !important; color: var(--accent); font-weight: 700; }
+#armHint { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); font-size: 13px; padding: 6px 12px; border-radius: 16px; z-index: 6; }
+@media (max-width: 560px) {
+  #palette { right: 8px; top: auto; bottom: 8px; transform: none; flex-direction: row-reverse; max-width: calc(100% - 16px); }
+  #paletteItems { flex-direction: row; overflow-x: auto; }
+}
+#markDialog { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--text); padding: 18px; width: min(380px, calc(100vw - 32px)); box-shadow: var(--shadow), 0 24px 60px rgba(0,0,0,.3); }
+#markDialog::backdrop { background: rgba(0,0,0,.15); }
+#markDialog h3 { margin: 0 0 10px; font: 600 18px Literata, Georgia, serif; }
+#markDialog textarea { width: 100%; min-height: 90px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 8px 10px; font: inherit; resize: vertical; margin-bottom: 12px; }
+
+/* ---- Highlight colors in the save-quote box ---- */
+.hl-colors { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; font-size: 13px; color: var(--muted); }
+.hl-colors button { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--border); cursor: pointer; }
+.hl-colors button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--accent); }
+
+/* ---- Quote/note cards with the book's cover icon ---- */
+.quote { border-left: 4px solid var(--qc, var(--hl)); }
+.quote.is-note::before { content: "📝"; font-size: 22px; top: -12px; opacity: 1; }
+.quote .src { display: flex; align-items: center; gap: 10px; }
+.thumb { width: 30px; flex: none; }
+.thumb .cover { border-radius: 2px 4px 4px 2px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.thumb .gen { padding: 0; }
+.thumb .gen span, .thumb .gen small { display: none; }
+.kind { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
+
 #toast { position: fixed; bottom: 70px; left: 50%; transform: translate(-50%, 20px); background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 20px; font-size: 14px; opacity: 0; transition: .25s; pointer-events: none; z-index: 60; }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 </style>
@@ -221,6 +277,12 @@ body[data-spread="two"] #viewer { max-width: 1400px; }
       <button data-v="">Original</button><button data-v="Literata">Serif</button><button data-v="Inter">Sans</button></div></div>
     <div class="group"><h4>Pages</h4><div class="seg" id="spreadSeg">
       <button data-v="one">Single page</button><button data-v="two">Two pages</button></div></div>
+    <div class="group"><h4>Line spacing</h4>
+      <div class="stepper"><button id="tighter" aria-label="Tighter line spacing">−</button><output id="lhOut">1.7</output><button id="looser" aria-label="Looser line spacing">+</button></div></div>
+    <div class="group"><h4>Margins</h4><div class="seg" id="marginSeg">
+      <button data-v="narrow">Narrow</button><button data-v="normal">Normal</button><button data-v="wide">Wide</button></div></div>
+    <div class="group"><h4>Annotation tools</h4><div class="seg" id="paletteSeg">
+      <button data-v="on">Show</button><button data-v="off">Hide</button></div></div>
   </div>
 </header>
 
@@ -240,6 +302,11 @@ body[data-spread="two"] #viewer { max-width: 1400px; }
       <button class="side" id="prev" aria-label="Previous page">‹</button>
       <div id="viewer"><div id="readerEmpty"><b>No book open</b>Pick one from your library to start reading.</div></div>
       <button class="side" id="next" aria-label="Next page">›</button>
+      <div id="palette" hidden>
+        <button id="paletteToggle" aria-expanded="true" aria-controls="paletteItems" aria-label="Show or hide annotation tools" title="Annotations">✎</button>
+        <div id="paletteItems" role="toolbar" aria-label="Drag onto the page, or tap then tap the text"></div>
+      </div>
+      <div id="armHint" hidden></div>
     </div>
     <div id="readerFoot">
       <span id="chapter"></span>
@@ -250,7 +317,7 @@ body[data-spread="two"] #viewer { max-width: 1400px; }
 
   <section id="quotes">
     <div class="section-head" style="margin-top:0">
-      <h2 class="section-title">Quotes</h2><span class="count" id="quoteCount"></span>
+      <h2 class="section-title">Quotes &amp; notes</h2><span class="count" id="quoteCount"></span>
     </div>
     <div class="filters">
       <input id="search" type="search" placeholder="Search quotes and notes…" aria-label="Search quotes">
@@ -263,11 +330,24 @@ body[data-spread="two"] #viewer { max-width: 1400px; }
 <div id="quoteBox" role="dialog" aria-label="Save quote">
   <div class="label">Save quote</div>
   <blockquote id="quoteText"></blockquote>
+  <div class="hl-colors" id="hlColors">Highlight</div>
   <textarea id="quoteNote" rows="2" placeholder="Add a note (optional)"></textarea>
   <div class="row"><button class="btn secondary" id="quoteCancel">Cancel</button><button class="btn" id="quoteSave">Save quote</button></div>
 </div>
 <div id="dropOverlay"><div>Drop to add to your library</div></div>
 <div id="toast" role="status"></div>
+<div id="bookmark" role="status" aria-live="polite"><div class="ribbon" aria-hidden="true">♥</div><div class="bm-text"><b>Saved your place</b><small id="bmWhere"></small></div></div>
+
+<dialog id="markDialog" aria-labelledby="mdTitle">
+  <form method="dialog" id="markForm">
+    <h3 id="mdTitle">Note</h3>
+    <textarea id="mdText" placeholder="Write your note…" aria-label="Note text"></textarea>
+    <div class="dialog-row">
+      <button type="button" class="btn danger" id="mdDelete">Delete</button><span class="spacer"></span>
+      <button type="button" class="btn secondary" id="mdCancel">Cancel</button><button class="btn" id="mdSave">Save</button>
+    </div>
+  </form>
+</dialog>
 
 <dialog id="themeDialog" aria-labelledby="tdTitle">
   <form method="dialog" id="themeForm">
@@ -287,12 +367,14 @@ body[data-spread="two"] #viewer { max-width: 1400px; }
 </dialog>
 
 <script>
-// ---- IndexedDB: books (incl. file bytes + cover) and quotes persist in this browser ----
+// ---- IndexedDB: books (incl. file bytes + cover), quotes and marks (notes/stickers) persist in this browser ----
 const dbp = new Promise((res, rej) => {
-  const r = indexedDB.open('bookshelf', 1);
+  const r = indexedDB.open('bookshelf', 2);
   r.onupgradeneeded = () => {
-    r.result.createObjectStore('books', { keyPath: 'id' });
-    r.result.createObjectStore('quotes', { keyPath: 'id' }).createIndex('bookId', 'bookId');
+    const db = r.result, has = n => db.objectStoreNames.contains(n);
+    if (!has('books')) db.createObjectStore('books', { keyPath: 'id' });
+    if (!has('quotes')) db.createObjectStore('quotes', { keyPath: 'id' }).createIndex('bookId', 'bookId');
+    if (!has('marks')) db.createObjectStore('marks', { keyPath: 'id' });
   };
   r.onsuccess = () => res(r.result);
   r.onerror = () => rej(r.error);
@@ -317,7 +399,8 @@ function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add
 
 // ---- Preferences (per-browser convenience; falls back to defaults) ----
 const THEMES = [['paper', 'Paper'], ['sepia', 'Sepia'], ['sage', 'Sage'], ['dusk', 'Dusk'], ['midnight', 'Midnight'], ['black', 'Black']];
-let prefs = { theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dusk' : 'paper', size: 110, font: 'Literata', spread: 'one' };
+let prefs = { theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dusk' : 'paper', size: 110, font: 'Literata', spread: 'one',
+  lh: 1.7, margin: 'normal', palette: 'on', hl: '' };
 try { Object.assign(prefs, JSON.parse(localStorage.getItem('bookshelf-prefs')) || {}); } catch {}
 function savePrefs() { try { localStorage.setItem('bookshelf-prefs', JSON.stringify(prefs)); } catch {} }
 
@@ -369,10 +452,13 @@ function applyPrefs() {
   setThemeVars(custom);
   $('editTheme').hidden = !custom;
   document.body.dataset.spread = prefs.spread;
+  document.body.dataset.margin = prefs.margin;
   document.querySelectorAll('.swatch').forEach(b => b.setAttribute('aria-pressed', b.dataset.themeId === prefs.theme));
-  document.querySelectorAll('#fontSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === prefs.font));
-  document.querySelectorAll('#spreadSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === prefs.spread));
+  for (const [seg, key] of [['fontSeg', 'font'], ['spreadSeg', 'spread'], ['marginSeg', 'margin'], ['paletteSeg', 'palette']])
+    document.querySelectorAll(`#${seg} button`).forEach(b => b.setAttribute('aria-pressed', b.dataset.v === prefs[key]));
   $('sizeOut').textContent = prefs.size + '%';
+  $('lhOut').textContent = prefs.lh.toFixed(1);
+  syncPalette();
   styleBook();
   savePrefs();
 }
@@ -440,12 +526,21 @@ $('spreadSeg').onclick = e => {
 };
 $('smaller').onclick = () => { prefs.size = Math.max(70, prefs.size - 10); applyPrefs(); };
 $('bigger').onclick = () => { prefs.size = Math.min(200, prefs.size + 10); applyPrefs(); };
+$('tighter').onclick = () => { prefs.lh = Math.max(1.2, Math.round((prefs.lh - 0.1) * 10) / 10); applyPrefs(); };
+$('looser').onclick = () => { prefs.lh = Math.min(2.4, Math.round((prefs.lh + 0.1) * 10) / 10); applyPrefs(); };
+$('marginSeg').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  prefs.margin = b.dataset.v; applyPrefs();
+  if (rendition && rendition.manager) setTimeout(() => rendition.resize(), 50);
+};
+$('paletteSeg').onclick = e => { const b = e.target.closest('button'); if (b) { prefs.palette = b.dataset.v; applyPrefs(); } };
 $('settingsBtn').onclick = e => { e.stopPropagation(); const open = $('settings').classList.toggle('open'); $('settingsBtn').setAttribute('aria-expanded', open); };
 document.addEventListener('click', e => { if (!e.target.closest('#settings')) { $('settings').classList.remove('open'); $('settingsBtn').setAttribute('aria-expanded', false); } });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('settings').classList.remove('open'); hideQuoteBox(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('settings').classList.remove('open'); hideQuoteBox(); disarm(); } });
 
 // ---- Tabs ----
 function show(tab) {
+  if (document.body.dataset.view === 'reader' && tab !== 'reader' && current) showBookmark(current);
   document.body.dataset.view = tab;
   document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
   document.querySelectorAll('main > section').forEach(s => s.classList.toggle('active', s.id === tab));
@@ -455,15 +550,23 @@ function show(tab) {
 }
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => show(b.dataset.tab));
 
-// ---- Covers ----
+// ---- Covers (with a ribbon bookmark on books you're partway through) ----
 const coverUrls = new Map();
-function coverHTML(b) {
+function coverHTML(b, ribbon) {
+  const mark = ribbon && b.pct > 0 && b.pct < 1 ? `<span class="ribbon-mark" title="Bookmarked at ${Math.round(b.pct * 100)}%"></span>` : '';
   if (b.cover) {
     if (!coverUrls.has(b.id)) coverUrls.set(b.id, URL.createObjectURL(b.cover));
-    return `<div class="cover"><img src="${coverUrls.get(b.id)}" alt=""></div>`;
+    return `<div class="cover">${mark}<img src="${coverUrls.get(b.id)}" alt=""></div>`;
   }
   let h = 0; for (const c of b.title) h = (h * 31 + c.charCodeAt(0)) % 360;
-  return `<div class="cover"><div class="gen" style="--h:${h}"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div></div>`;
+  return `<div class="cover">${mark}<div class="gen" style="--h:${h}"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div></div>`;
+}
+
+function showBookmark(b) {
+  $('bmWhere').textContent = `${Math.round(b.pct * 100)}%${b.chapter ? ' · ' + b.chapter : ''}`;
+  const el = $('bookmark');
+  el.classList.remove('show'); void el.offsetWidth; // restart the animation
+  el.classList.add('show');
 }
 
 // ---- Library ----
@@ -506,7 +609,7 @@ async function renderLibrary() {
   const last = books.find(b => b.opened && b.pct < 1);
   $('hero').innerHTML = last ? `
     <div class="hero">
-      ${coverHTML(last)}
+      ${coverHTML(last, true)}
       <div>
         <div class="eyebrow">Continue reading</div>
         <h3>${esc(last.title)}</h3>
@@ -519,7 +622,7 @@ async function renderLibrary() {
   $('bookCount').textContent = books.length ? `${books.length} book${books.length > 1 ? 's' : ''}` : '';
   $('books').innerHTML = books.length ? books.map(b => `
     <li class="card">
-      <button class="open" data-open="${b.id}" aria-label="Read ${esc(b.title)}">${coverHTML(b)}</button>
+      <button class="open" data-open="${b.id}" aria-label="Read ${esc(b.title)}">${coverHTML(b, true)}</button>
       <div class="card-title">${esc(b.title)}</div>
       <div class="card-author">${esc(b.author) || '&nbsp;'}</div>
       <div class="mini"><div class="bar"><div style="width:${b.pct * 100}%"></div></div><span>${b.pct >= 1 ? 'Done' : Math.round(b.pct * 100) + '%'}</span></div>
@@ -532,8 +635,9 @@ async function renderLibrary() {
 $('library').onclick = async e => {
   const open = e.target.closest('[data-open]'), rm = e.target.closest('[data-del]');
   if (open) openBook(open.dataset.open);
-  if (rm && confirm('Remove this book and its quotes?')) {
+  if (rm && confirm('Remove this book and its quotes and notes?')) {
     for (const q of (await all('quotes')).filter(q => q.bookId === rm.dataset.del)) await del('quotes', q.id);
+    for (const m of (await all('marks')).filter(m => m.bookId === rm.dataset.del)) await del('marks', m.id);
     await del('books', rm.dataset.del);
     if (current && current.id === rm.dataset.del) closeBook();
     renderLibrary();
@@ -542,13 +646,17 @@ $('library').onclick = async e => {
 
 // ---- Reader ----
 let book = null, rendition = null, current = null, pendingCfi = null;
-const hls = new Set();
+let marks = []; // notes + stickers of the open book
+const hls = new Map(); // highlighted cfi -> color ('' = theme highlight)
 const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap';
 
 function closeBook() {
   if (book) book.destroy();
   book = rendition = current = null;
   hls.clear();
+  marks = [];
+  disarm();
+  syncPalette();
   $('viewer').innerHTML = '<div id="readerEmpty"><b>No book open</b>Pick one from your library to start reading.</div>';
   $('chapter').textContent = '';
   setProgress(0, '');
@@ -568,9 +676,10 @@ function styleBook() {
   rendition.themes.override('color', v('--page-text'), true);
   rendition.themes.override('background', v('--page'), true);
   rendition.themes.override('font-family', prefs.font ? `${prefs.font}, Georgia, serif` : '', true);
-  rendition.themes.override('line-height', '1.7');
+  rendition.themes.override('line-height', String(prefs.lh));
   rendition.themes.fontSize(prefs.size + '%');
-  for (const cfi of hls) { rendition.annotations.remove(cfi, 'highlight'); addHighlight(cfi); }
+  for (const [cfi, color] of hls) { rendition.annotations.remove(cfi, 'highlight'); addHighlight(cfi, color); }
+  setTimeout(redrawMarks, 300); // text reflows after size/spacing changes
 }
 
 function chapterOf(href) {
@@ -587,18 +696,22 @@ async function openBook(id, cfi) {
   $('viewer').innerHTML = '';
   book = ePub(current.data);
   rendition = book.renderTo('viewer', { width: '100%', height: '100%', spread: prefs.spread === 'two' ? 'auto' : 'none', minSpreadWidth: 900 });
-  rendition.hooks.content.register(c => c.addStylesheet(FONT_CSS));
+  marks = (await all('marks')).filter(m => m.bookId === id);
+  rendition.hooks.content.register(c => { c.addStylesheet(FONT_CSS); wireAnnotations(c); });
   rendition.on('relocated', onRelocated);
   rendition.on('selected', onSelected);
   rendition.on('keyup', onKey);
+  rendition.on('rendered', (section, view) => drawMarks(view.contents));
+  rendition.on('resized', () => setTimeout(redrawMarks, 100));
   styleBook();
+  syncPalette();
 
   setProgress(current.pct, current.locations ? Math.round(current.pct * 100) + '%' : 'indexing…');
   await rendition.display(cfi || current.cfi || undefined);
   // Loading locations before the first display hangs epub.js 0.3.93.
   if (current.locations) book.locations.load(current.locations);
 
-  for (const q of (await all('quotes')).filter(q => q.bookId === id)) { hls.add(q.cfi); addHighlight(q.cfi); }
+  for (const q of (await all('quotes')).filter(q => q.bookId === id)) { hls.set(q.cfi, q.color || ''); addHighlight(q.cfi, q.color); }
 
   const thisBook = book;
   if (!current.locations) {
@@ -634,17 +747,151 @@ document.addEventListener('keyup', e => { if (document.body.dataset.view === 're
 $('prev').onclick = () => ready() && rendition.prev();
 $('next').onclick = () => ready() && rendition.next();
 
-function addHighlight(cfi) {
-  rendition.annotations.highlight(cfi, {}, () => {}, 'hl', { fill: getComputedStyle(root).getPropertyValue('--hl').trim(), 'fill-opacity': '0.45', 'mix-blend-mode': 'normal' });
+function addHighlight(cfi, color) {
+  rendition.annotations.highlight(cfi, {}, () => {}, 'hl', { fill: color || getComputedStyle(root).getPropertyValue('--hl').trim(), 'fill-opacity': '0.45', 'mix-blend-mode': 'normal' });
 }
 
-// ---- Quotes from selection ----
+// ---- Annotations: notes + stickers dragged from the palette (or tap, then tap the text) ----
+const STICKERS = ['⭐', '❤️', '💡', '❓', '🔥', '😂', '📌'];
+$('paletteItems').innerHTML =
+  `<button draggable="true" data-kind="note" data-emoji="📝" aria-label="Note" title="Note: drag onto the page">📝</button>` +
+  STICKERS.map(s => `<button draggable="true" data-kind="sticker" data-emoji="${s}" aria-label="Sticker ${s}" title="Sticker: drag onto the page">${s}</button>`).join('');
+let armed = null;
+if (matchMedia('(max-width: 560px)').matches) { $('palette').classList.add('closed'); $('paletteToggle').setAttribute('aria-expanded', false); } // phones: start tucked away
+function syncPalette() { $('palette').hidden = !current || prefs.palette === 'off'; }
+function disarm() {
+  armed = null;
+  $('armHint').hidden = true;
+  document.querySelectorAll('#paletteItems button').forEach(b => b.setAttribute('aria-pressed', false));
+}
+$('paletteToggle').onclick = () => {
+  const closed = $('palette').classList.toggle('closed');
+  $('paletteToggle').setAttribute('aria-expanded', !closed);
+  if (closed) disarm();
+};
+$('paletteItems').addEventListener('dragstart', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  e.dataTransfer.setData('text/x-annot', JSON.stringify({ kind: b.dataset.kind, emoji: b.dataset.emoji }));
+  e.dataTransfer.effectAllowed = 'copy';
+});
+$('paletteItems').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const same = armed && armed.emoji === b.dataset.emoji;
+  disarm();
+  if (same) return;
+  armed = { kind: b.dataset.kind, emoji: b.dataset.emoji };
+  b.setAttribute('aria-pressed', true);
+  $('armHint').textContent = `Tap a word to place ${armed.emoji} · Esc to cancel`;
+  $('armHint').hidden = false;
+};
+
+const MARK_CSS = '.bs-mark{position:absolute;z-index:5;font-size:18px;line-height:1;cursor:pointer;user-select:none;text-indent:0;' +
+  'transform:translate(-50%,-90%);filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));transition:transform .15s}.bs-mark:hover{transform:translate(-50%,-90%) scale(1.3)}';
+function wireAnnotations(c) {
+  const d = c.document, st = d.createElement('style');
+  st.textContent = MARK_CSS;
+  d.head.appendChild(st);
+  d.addEventListener('dragover', e => { if ([...e.dataTransfer.types].includes('text/x-annot')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } });
+  d.addEventListener('drop', e => {
+    const raw = e.dataTransfer.getData('text/x-annot'); if (!raw) return;
+    e.preventDefault();
+    placeMark(c, e.clientX, e.clientY, JSON.parse(raw));
+  });
+  d.addEventListener('click', e => {
+    const m = e.target.closest && e.target.closest('.bs-mark');
+    if (m) { e.preventDefault(); e.stopPropagation(); openMark(m.dataset.id); return; }
+    if (armed) { e.preventDefault(); placeMark(c, e.clientX, e.clientY, armed); disarm(); }
+  }, true);
+}
+
+// The word under a point, as a Range (null if the point isn't on text).
+function wordRangeAt(d, x, y) {
+  let node, off;
+  if (d.caretRangeFromPoint) { const r = d.caretRangeFromPoint(x, y); if (!r) return null; node = r.startContainer; off = r.startOffset; }
+  else if (d.caretPositionFromPoint) { const p = d.caretPositionFromPoint(x, y); if (!p) return null; node = p.offsetNode; off = p.offset; }
+  if (!node || node.nodeType !== 3 || !node.data.trim()) return null;
+  const s = node.data;
+  let a = Math.min(off, s.length), b = a;
+  while (a > 0 && /\S/.test(s[a - 1])) a--;
+  while (b < s.length && /\S/.test(s[b])) b++;
+  if (a === b) { while (b < s.length && /\s/.test(s[b])) b++; a = b; while (b < s.length && /\S/.test(s[b])) b++; }
+  if (a === b) return null;
+  const r = d.createRange(); r.setStart(node, a); r.setEnd(node, b);
+  return r;
+}
+
+async function placeMark(c, x, y, spec) {
+  if (!current) return;
+  const r = wordRangeAt(c.document, x, y);
+  if (!r) return toast('Drop it onto a word');
+  const m = { id: crypto.randomUUID(), bookId: current.id, bookTitle: current.title, cfi: c.cfiFromRange(r), kind: spec.kind, emoji: spec.emoji,
+    text: '', word: r.toString(), chapter: current.chapter || '', created: Date.now() };
+  if (m.kind === 'note') return openMark(null, m);
+  await put('marks', m);
+  marks.push(m);
+  drawMarks(c);
+  toast(`${m.emoji} added`);
+}
+
+function drawMarks(c) {
+  const d = c && c.document; if (!d) return;
+  d.querySelectorAll('.bs-mark').forEach(n => n.remove());
+  const onWord = new Map(); // several marks on one word sit side by side
+  for (const m of marks) {
+    if (new ePub.CFI(m.cfi).spinePos !== c.sectionIndex) continue;
+    let rect; try { rect = c.range(m.cfi).getBoundingClientRect(); } catch { continue; }
+    const el = d.createElement('span');
+    el.className = 'bs-mark'; el.dataset.id = m.id; el.textContent = m.emoji;
+    el.title = m.kind === 'note' ? m.text : 'Sticker';
+    const nth = onWord.get(m.cfi) || 0; onWord.set(m.cfi, nth + 1);
+    el.style.left = (rect.left + rect.width / 2 + nth * 20 + d.defaultView.scrollX) + 'px';
+    el.style.top = (rect.top + d.defaultView.scrollY) + 'px';
+    d.documentElement.appendChild(el); // outside <body> so book CFIs are unaffected
+  }
+}
+const redrawMarks = () => rendition && rendition.manager && rendition.getContents().forEach(drawMarks);
+
+let editingMark = null;
+function openMark(id, fresh) {
+  editingMark = fresh || marks.find(m => m.id === id);
+  if (!editingMark) return;
+  const note = editingMark.kind === 'note';
+  $('mdTitle').textContent = note ? `${fresh ? 'New note' : 'Note'} on “${editingMark.word}”` : `Sticker ${editingMark.emoji} on “${editingMark.word}”`;
+  $('mdText').hidden = $('mdSave').hidden = !note;
+  $('mdText').value = editingMark.text || '';
+  $('mdDelete').hidden = !!fresh;
+  $('markDialog').showModal();
+}
+$('mdCancel').onclick = () => $('markDialog').close();
+$('markForm').onsubmit = async () => {
+  const m = editingMark;
+  m.text = $('mdText').value.trim();
+  if (!m.text) return; // an empty note isn't saved
+  await put('marks', m);
+  if (!marks.includes(m)) marks.push(m);
+  redrawMarks();
+  toast('Note saved');
+};
+$('mdDelete').onclick = async () => {
+  await del('marks', editingMark.id);
+  marks = marks.filter(m => m.id !== editingMark.id);
+  redrawMarks();
+  $('markDialog').close();
+};
+
+// ---- Quotes from selection (with a highlight color) ----
+const HL_COLORS = [['', 'Theme'], ['#ffd966', 'Yellow'], ['#a8e6a1', 'Green'], ['#9fd3ff', 'Blue'], ['#ffb3d1', 'Pink'], ['#d7b4ff', 'Purple']];
+$('hlColors').insertAdjacentHTML('beforeend', HL_COLORS.map(([c, n]) =>
+  `<button data-c="${c}" aria-label="${n} highlight" title="${n}" style="background:${c || 'var(--hl)'}"></button>`).join(''));
+const syncHlColors = () => document.querySelectorAll('#hlColors button').forEach(b => b.setAttribute('aria-pressed', b.dataset.c === prefs.hl));
+$('hlColors').onclick = e => { const b = e.target.closest('button'); if (b) { prefs.hl = b.dataset.c; syncHlColors(); savePrefs(); } };
 async function onSelected(cfi, contents) {
   const text = (await book.getRange(cfi)).toString().trim();
   if (!text) return;
   pendingCfi = { cfi, text, contents };
   $('quoteText').textContent = text;
   $('quoteNote').value = '';
+  syncHlColors();
   $('quoteBox').style.display = 'block';
 }
 function hideQuoteBox() {
@@ -656,47 +903,59 @@ $('quoteCancel').onclick = hideQuoteBox;
 $('quoteSave').onclick = async () => {
   if (!pendingCfi || !current) return;
   await put('quotes', { id: crypto.randomUUID(), bookId: current.id, bookTitle: current.title, cfi: pendingCfi.cfi,
-    text: pendingCfi.text, note: $('quoteNote').value.trim(), chapter: current.chapter || '', pct: current.pct, created: Date.now() });
-  hls.add(pendingCfi.cfi);
-  addHighlight(pendingCfi.cfi);
+    text: pendingCfi.text, note: $('quoteNote').value.trim(), chapter: current.chapter || '', pct: current.pct, color: prefs.hl, created: Date.now() });
+  hls.set(pendingCfi.cfi, prefs.hl);
+  addHighlight(pendingCfi.cfi, prefs.hl);
   hideQuoteBox();
   toast('Quote saved');
 };
 
 // ---- Quotes tab ----
 async function renderQuotes() {
-  const allQs = await all('quotes');
-  const titles = [...new Set(allQs.map(q => q.bookTitle))].sort();
+  const [allQs, allMarks, books] = await Promise.all([all('quotes'), all('marks'), all('books')]);
+  const byId = new Map(books.map(b => [b.id, b]));
+  const notes = allMarks.filter(m => m.kind === 'note');
+  const items = [...allQs.map(q => ({ ...q, store: 'quotes' })), ...notes.map(m => ({ ...m, store: 'marks', note: '' }))];
+  const titles = [...new Set(items.map(q => q.bookTitle))].sort();
   const sel = $('bookFilter'), chosen = titles.includes(sel.value) ? sel.value : '';
   sel.innerHTML = '<option value="">All books</option>' + titles.map(t => `<option ${t === chosen ? 'selected' : ''}>${esc(t)}</option>`).join('');
   const term = $('search').value.toLowerCase();
-  const qs = allQs
+  const shown = items
     .filter(q => (!chosen || q.bookTitle === chosen) && (!term || (q.text + ' ' + q.note + ' ' + q.bookTitle).toLowerCase().includes(term)))
     .sort((a, b) => b.created - a.created);
-  $('quoteCount').textContent = allQs.length ? `${allQs.length} saved` : '';
-  $('quoteList').innerHTML = qs.length ? qs.map(q => `
-    <article class="quote">
+  $('quoteCount').textContent = items.length ? `${allQs.length} quote${allQs.length === 1 ? '' : 's'} · ${notes.length} note${notes.length === 1 ? '' : 's'}` : '';
+  $('quoteList').innerHTML = shown.length ? shown.map(q => {
+    const b = byId.get(q.bookId), isNote = q.store === 'marks';
+    return `
+    <article class="quote${isNote ? ' is-note' : ''}" style="--qc:${esc(q.color || (isNote ? 'var(--accent)' : 'var(--hl)'))}">
+      ${isNote ? `<div class="kind">Note on “${esc(q.word)}”</div>` : ''}
       <p>${esc(q.text)}</p>
       ${q.note ? `<div class="note">${esc(q.note)}</div>` : ''}
-      <div class="src"><b>${esc(q.bookTitle)}</b>${q.chapter ? ' · ' + esc(q.chapter) : ''} · ${new Date(q.created).toLocaleDateString()}</div>
+      <div class="src">${b ? `<div class="thumb">${coverHTML(b)}</div>` : ''}
+        <div><b>${esc(q.bookTitle)}</b>${q.chapter ? ' · ' + esc(q.chapter) : ''} · ${new Date(q.created).toLocaleDateString()}</div></div>
       <div class="actions">
-        <button class="go" data-go="${q.id}">Open in book →</button>
-        <button data-copy="${q.id}">Copy</button>
-        <button data-rm="${q.id}">Delete</button>
+        <button class="go" data-go="${q.id}" data-store="${q.store}">Open in book →</button>
+        <button data-copy="${q.id}" data-store="${q.store}">Copy</button>
+        <button data-rm="${q.id}" data-store="${q.store}">Delete</button>
       </div>
-    </article>`).join('')
-    : `<p class="empty">${allQs.length ? 'No matches.' : 'No quotes yet. Select text while reading to save one.'}</p>`;
+    </article>`;
+  }).join('')
+    : `<p class="empty">${items.length ? 'No matches.' : 'Nothing saved yet. Select text while reading to save a quote, or drag a 📝 note onto the page.'}</p>`;
 }
 $('search').oninput = renderQuotes;
 $('bookFilter').onchange = renderQuotes;
 $('quoteList').onclick = async e => {
   const b = e.target.closest('button'); if (!b) return;
-  const q = await get('quotes', b.dataset.go || b.dataset.copy || b.dataset.rm);
+  const store = b.dataset.store, q = await get(store, b.dataset.go || b.dataset.copy || b.dataset.rm);
+  if (!q) return;
   if (b.dataset.go) openBook(q.bookId, q.cfi);
-  if (b.dataset.copy) { await navigator.clipboard.writeText(`“${q.text}” (${q.bookTitle})`); toast('Copied'); }
-  if (b.dataset.rm && confirm('Delete this quote?')) {
-    await del('quotes', q.id);
-    if (current && current.id === q.bookId && rendition) { rendition.annotations.remove(q.cfi, 'highlight'); hls.delete(q.cfi); }
+  if (b.dataset.copy) { await navigator.clipboard.writeText(store === 'marks' ? `${q.text} (note on “${q.word}”, ${q.bookTitle})` : `“${q.text}” (${q.bookTitle})`); toast('Copied'); }
+  if (b.dataset.rm && confirm(store === 'marks' ? 'Delete this note?' : 'Delete this quote?')) {
+    await del(store, q.id);
+    if (current && current.id === q.bookId && rendition) {
+      if (store === 'quotes') { rendition.annotations.remove(q.cfi, 'highlight'); hls.delete(q.cfi); }
+      else { marks = marks.filter(m => m.id !== q.id); redrawMarks(); }
+    }
     renderQuotes();
   }
 };
