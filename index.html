@@ -6,7 +6,7 @@
 <title>Bookshelf Reader</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.0/dist/umd/supabase.min.js"></script>
@@ -42,21 +42,9 @@
   --accent: #f0b35a; --accent-soft: #2b2110; --hl: #6b5313; --page: #000; --page-text: #d4d4d4;
   --shadow: none;
 }
-/* Gio: your own sticker sheet's colours; decorated with the stickers you import (My stickers) */
-[data-theme="gio"] {
-  --bg: #e6e6e6; --surface: #ffffff; --text: #2a2526; --muted: #85797c; --border: #dcd6d7;
-  --accent: #f08aa8; --accent-soft: #fde3ea; --hl: #ffcbd8; --page: #ffffff; --page-text: #2a2526; --on-accent: #fff;
-  --shadow: 0 0 0 1.5px rgba(42,37,38,.55), 0 5px 12px rgba(0,0,0,.08);
-}
-/* Usagi: butter yellow, bunny pink, soft brown outlines */
-[data-theme="usagi"] {
-  --bg: #fff3c4; --surface: #fffdf2; --text: #5a4334; --muted: #9c8471; --border: #efdcae;
-  --accent: #ec8cab; --accent-soft: #fde2eb; --hl: #ffc9d9; --page: #fffbe9; --page-text: #4a372a; --on-accent: #fff;
-  --shadow: 0 0 0 1.5px rgba(122,90,70,.35), 0 6px 14px rgba(150,110,60,.12);
-}
 * { box-sizing: border-box; }
 html, body { height: 100%; }
-body { margin: 0; background: var(--pattern, none), var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, sans-serif; display: flex; flex-direction: column; transition: background .25s, color .25s; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, sans-serif; display: flex; flex-direction: column; transition: background .25s, color .25s; }
 button { font: inherit; color: inherit; }
 .serif { font-family: Literata, Georgia, serif; }
 
@@ -175,7 +163,6 @@ body[data-margin="wide"] { --page-w: 600px; }
 .filters input, .filters select { padding: 9px 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--text); font: inherit; }
 .filters input { flex: 1; min-width: 200px; }
 #quoteList { columns: 320px; column-gap: 18px; margin-top: 20px; }
-#quoteList .empty { column-span: all; }
 .quote { break-inside: avoid; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 18px 12px; margin-bottom: 18px; box-shadow: var(--shadow); position: relative; }
 .quote::before { content: "“"; position: absolute; top: -6px; left: 14px; font: 600 54px Literata, serif; color: var(--accent); opacity: .35; }
 .quote p { margin: 10px 0 0; font: 16px/1.6 Literata, Georgia, serif; }
@@ -239,8 +226,7 @@ body[data-margin="wide"] { --page-w: 600px; }
 #palette { position: absolute; right: 76px; top: 50%; transform: translateY(-50%); z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 6px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 6px; box-shadow: var(--shadow); }
 #palette[hidden] { display: none; }
-#paletteItems { display: grid; grid-template-columns: repeat(2, 38px); gap: 4px; max-height: 70vh; overflow-y: auto; }
-#palette:not(.closed) { border-radius: 24px; }
+#paletteItems { display: flex; flex-direction: column; gap: 4px; }
 #palette.closed #paletteItems { display: none; }
 #palette button { width: 38px; height: 38px; border-radius: 50%; border: 0; background: none; cursor: grab; font-size: 19px; display: grid; place-items: center; }
 #palette button:hover, #palette button[aria-pressed="true"] { background: var(--accent-soft); }
@@ -248,8 +234,7 @@ body[data-margin="wide"] { --page-w: 600px; }
 #armHint { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); font-size: 13px; padding: 6px 12px; border-radius: 16px; z-index: 6; }
 @media (max-width: 560px) {
   #palette { right: 8px; top: auto; bottom: 8px; transform: none; flex-direction: row-reverse; max-width: calc(100% - 16px); }
-  #paletteItems { display: flex; flex-direction: row; overflow-x: auto; max-height: none; }
-  #paletteItems button { flex: none; }
+  #paletteItems { flex-direction: row; overflow-x: auto; }
 }
 #markDialog { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--text); padding: 18px; width: min(380px, calc(100vw - 32px)); box-shadow: var(--shadow), 0 24px 60px rgba(0,0,0,.3); }
 #markDialog::backdrop { background: rgba(0,0,0,.15); }
@@ -327,77 +312,6 @@ body[data-margin="wide"] { --page-w: 600px; }
 .pm { position: absolute; top: 50%; width: 3px; height: 16px; margin-top: -8px; border-radius: 2px; background: var(--text); opacity: .45; transform: translateX(-1px); pointer-events: none; }
 @media (max-width: 560px) { .tab { padding: 6px 8px; } }
 
-/* ---- Reading lists, book menu, list/share dialogs ---- */
-.list-bar { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 22px; }
-.list-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface); cursor: pointer; font-weight: 500; transition: transform .12s; }
-.list-chip .n { color: var(--muted); font-size: 12px; }
-.list-chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent, #fff); border-color: var(--accent); }
-.list-chip[aria-pressed="true"] .n { color: inherit; opacity: .8; }
-.list-chip.over { outline: 3px dashed var(--accent); outline-offset: 2px; transform: scale(1.08); }
-.list-chip.new { border-style: dashed; color: var(--muted); }
-.card[draggable="true"] { cursor: grab; }
-#bookMenu { position: fixed; z-index: 80; min-width: 230px; max-width: calc(100vw - 16px); background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow), 0 16px 40px rgba(0,0,0,.18); padding: 8px; }
-#bookMenu[hidden] { display: none; }
-.menu-title { font-weight: 600; padding: 4px 8px 6px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.menu-h { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 4px 8px; }
-.menu-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: 0; padding: 8px; border-radius: 8px; cursor: pointer; }
-.menu-item:hover { background: var(--accent-soft); }
-.menu-item.danger { color: #c0392b; }
-#bookMenu hr { border: 0; border-top: 1px solid var(--border); margin: 6px 0; }
-.dlg { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--text); padding: 20px; width: min(420px, calc(100vw - 32px)); box-shadow: var(--shadow), 0 24px 60px rgba(0,0,0,.3); }
-.dlg::backdrop { background: rgba(0,0,0,.18); }
-.dlg h3 { margin: 0 0 12px; font: 600 20px Literata, Georgia, serif; }
-.emoji-pick { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-.emoji-pick button { width: 40px; height: 40px; border-radius: 10px; border: 2px solid var(--border); background: var(--bg); font-size: 19px; cursor: pointer; }
-.emoji-pick button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
-.kawaii .dlg h3 { font-family: "Zen Maru Gothic", sans-serif; font-weight: 700; }
-
-/* ---- Cute theme extras (Usagi, Gio, sticker-pack themes): rounded type, sticker outlines, mascot ---- */
-.kawaii body, .kawaii button, .kawaii input, .kawaii select, .kawaii textarea { font-family: "Zen Maru Gothic", Inter, sans-serif; }
-.kawaii :is(.brand, h2.section-title, .hero h3, .club-head h2, .panel h3, .club-card h3, .dropzone b, #readerEmpty b, .auth-card h2, #themeDialog h3, #markDialog h3) { font-family: "Zen Maru Gothic", sans-serif; font-weight: 700; }
-.kawaii :is(.hero, .panel, .club-card, .quote, .auth-card, .dropzone, #settings, #palette, #together) { border: 3px solid #fff; border-radius: 24px; box-shadow: var(--shadow); }
-.kawaii .cover { border: 3px solid #fff; border-radius: 12px; }
-.kawaii .btn { border-radius: 999px; }
-.kawaii .tabs, .kawaii .tab { border-radius: 999px; }
-.kawaii .brand svg { display: none; }
-.kawaii .brand::before { content: ""; width: 34px; height: 34px; background: var(--mochi-happy) center / contain no-repeat; }
-.kawaii .hero { position: relative; }
-.kawaii .hero::after { content: ""; position: absolute; right: 18px; bottom: -18px; width: 84px; height: 84px; background: var(--mochi-love) center / contain no-repeat; filter: drop-shadow(0 3px 4px rgba(0,0,0,.12)); }
-[data-theme="gio"] .brand::before { width: 40px; height: 40px; }
-[data-theme="gio"] .hero::after { width: 110px; height: 110px; bottom: -26px; }
-.kawaii .quote::before { content: ""; top: -18px; left: 10px; width: 36px; height: 36px; opacity: 1; background: var(--qs, var(--mochi-happy)) center / contain no-repeat; }
-.kawaii .empty::before, .kawaii .dropzone::before { content: ""; display: block; width: 72px; height: 72px; margin: 0 auto 8px; background: var(--mochi-sleepy) center / contain no-repeat; }
-.kawaii .ribbon-mark::after, .kawaii #bookmark .ribbon { font-size: 0; }
-.kawaii #bookmark .ribbon::before { content: ""; width: 30px; height: 30px; background: var(--mochi-joy) center / contain no-repeat; }
-/* Sticker icons (cute themes): tabs, settings, Add books, Continue */
-.has-icons :is(.tab, #addBtn, .hero .btn) { display: inline-flex; align-items: center; gap: 6px; }
-.has-icons :is(.tab, #addBtn, .hero .btn)::before { content: ""; width: 24px; height: 24px; flex: none; background-position: center; background-size: contain; background-repeat: no-repeat; }
-.has-icons .tab[data-tab="library"]::before { background-image: var(--ic-library); }
-.has-icons .tab[data-tab="reader"]::before { background-image: var(--ic-reader); }
-.has-icons .tab[data-tab="quotes"]::before { background-image: var(--ic-quotes); }
-.has-icons .tab[data-tab="clubs"]::before { background-image: var(--ic-clubs); }
-.has-icons #addBtn::before { background-image: var(--ic-add); }
-.has-icons .hero .btn::before { background-image: var(--ic-continue); }
-.has-icons #settingsBtn { font-size: 0; width: 42px; height: 38px; background: var(--ic-settings) center / 28px no-repeat, var(--surface); }
-@media (max-width: 560px) { .has-icons .tab { font-size: 0; gap: 0; padding: 4px 8px; } .has-icons .tab::before { width: 28px; height: 28px; } }
-.icon-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.icon-slot { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); cursor: pointer; font-size: 11px; color: var(--muted); }
-.icon-slot:hover { border-color: var(--accent); color: var(--text); }
-.icon-slot img, .icon-slot .ph { width: 30px; height: 30px; object-fit: contain; display: grid; place-items: center; }
-.ic-picker { max-height: 60vh; overflow: auto; }
-.ic-picker h4 { margin: 10px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
-.ic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
-.ic-grid button { border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); padding: 4px; cursor: pointer; aspect-ratio: 1; }
-.ic-grid button:hover { border-color: var(--accent); }
-.ic-grid img { width: 100%; height: 100%; object-fit: contain; }
-.pack-row { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-top: 1px solid var(--border); }
-.pack-row:first-child { border-top: 0; }
-.pack-row img { width: 30px; height: 30px; object-fit: contain; }
-.pack-row .pack-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
-.pack-row .link-btn { padding: 0 2px; }
-.stk { display: inline-block; width: 1.6em; height: 1.6em; vertical-align: middle; }
-#palette .stk { width: 30px; height: 30px; }
-
 #toast { position: fixed; bottom: 70px; left: 50%; transform: translate(-50%, 20px); background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 20px; font-size: 14px; opacity: 0; transition: .25s; pointer-events: none; z-index: 60; }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 </style>
@@ -427,18 +341,6 @@ body[data-margin="wide"] { --page-w: 600px; }
       <button data-v="narrow">Narrow</button><button data-v="normal">Normal</button><button data-v="wide">Wide</button></div></div>
     <div class="group"><h4>Annotation tools</h4><div class="seg" id="paletteSeg">
       <button data-v="on">Show</button><button data-v="off">Hide</button></div></div>
-    <div class="group"><h4>Icons</h4><div class="icon-slots" id="iconSlots"></div>
-      <button class="link-btn" id="resetIcons">Reset icons for this theme</button></div>
-    <div class="group"><h4>Background</h4>
-      <div class="inline-form"><select id="bgSel" aria-label="Background pattern">
-        <option value="auto">Theme default</option><option value="none">Plain</option><option value="dots">Polka dots</option>
-        <option value="meadow">Meadow</option><option value="sprinkle">Tiny dots</option><option value="mine">My image (repeats)</option></select>
-        <button class="btn secondary" id="bgPick" hidden>Choose image</button></div>
-      <input id="bgFile" type="file" accept="image/*" hidden></div>
-    <div class="group"><h4>My sticker packs</h4>
-      <div id="packList"></div>
-      <div style="display:flex;gap:8px;margin-top:8px"><button class="btn secondary" id="addStk">+ Add pack</button><button class="btn secondary" id="clearStk">Clear all</button></div>
-      <p class="muted" style="margin:6px 0 0">Add images or a whole sticker sheet; it's cut into stickers. “Make theme” turns a pack into a theme. Kept in this browser.</p></div>
   </div>
 </header>
 
@@ -446,11 +348,9 @@ body[data-margin="wide"] { --page-w: 600px; }
   <section id="library" class="active">
     <div id="hero"></div>
     <div class="section-head">
-      <h2 class="section-title" id="libTitle">Your library</h2><span class="count" id="bookCount"></span><span class="spacer"></span>
-      <span id="listActions" style="display:flex;gap:8px"></span>
+      <h2 class="section-title">Your library</h2><span class="count" id="bookCount"></span><span class="spacer"></span>
       <button class="btn" id="addBtn">+ Add books</button>
     </div>
-    <div class="list-bar" id="listBar" aria-label="Reading lists"></div>
     <ul class="grid" id="books"></ul>
     <input id="file" type="file" accept=".epub,application/epub+zip" multiple hidden>
   </section>
@@ -500,40 +400,6 @@ body[data-margin="wide"] { --page-w: 600px; }
 <div id="toast" role="status"></div>
 <div id="bookmark" role="status" aria-live="polite"><div class="ribbon" aria-hidden="true">♥</div><div class="bm-text"><b>Saved your place</b><small id="bmWhere"></small></div></div>
 
-<div id="bookMenu" role="menu" hidden></div>
-<input id="stickerFile" type="file" accept="image/*" multiple hidden>
-
-<dialog id="iconDialog" class="dlg" aria-labelledby="icTitle">
-  <h3 id="icTitle">Choose an icon</h3>
-  <div id="icGrid" class="ic-picker"></div>
-  <div class="dialog-row" style="margin-top:12px"><button class="btn secondary" id="icDefault">Use default</button><span class="spacer"></span><button class="btn secondary" id="icCancel">Cancel</button></div>
-</dialog>
-
-<dialog id="packDialog" class="dlg" aria-labelledby="pkTitle">
-  <form method="dialog" id="packForm">
-    <h3 id="pkTitle">Name this sticker pack</h3>
-    <label class="field">Name <input id="pkName" maxlength="30" required></label>
-    <div class="dialog-row"><span class="spacer"></span><button type="button" class="btn secondary" id="pkCancel">Cancel</button><button class="btn">Save</button></div>
-  </form>
-</dialog>
-
-<dialog id="listDialog" class="dlg" aria-labelledby="ldTitle">
-  <form method="dialog" id="listForm">
-    <h3 id="ldTitle">New list</h3>
-    <label class="field">Name <input id="ldName" maxlength="40" placeholder="Want to read" required></label>
-    <div class="emoji-pick" id="ldEmoji" role="group" aria-label="List icon"></div>
-    <div class="dialog-row"><span class="spacer"></span><button type="button" class="btn secondary" id="ldCancel">Cancel</button><button class="btn">Save</button></div>
-  </form>
-</dialog>
-
-<dialog id="shareDialog" class="dlg" aria-labelledby="sdTitle">
-  <h3 id="sdTitle">Share book</h3>
-  <p class="muted" id="sdText"></p>
-  <div class="inline-form" style="margin-bottom:12px"><input id="sdLink" readonly aria-label="Share link"><button class="btn" id="sdCopy">Copy</button></div>
-  <div class="dialog-row"><button class="btn danger" id="sdStop">Stop sharing</button><span class="spacer"></span>
-    <button class="btn secondary" id="sdNative" hidden>Share…</button><button class="btn secondary" id="sdClose">Done</button></div>
-</dialog>
-
 <dialog id="markDialog" aria-labelledby="mdTitle">
   <form method="dialog" id="markForm">
     <h3 id="mdTitle">Note</h3>
@@ -554,7 +420,6 @@ body[data-margin="wide"] { --page-w: 600px; }
     </div>
     <label class="field">Name <input id="tName" required maxlength="24"></label>
     <label class="field">Start from <select id="tBase"></select></label>
-    <label class="field">Sticker pack (decorates the theme and fills the palette) <select id="tPack"></select></label>
     <div class="colors" id="tColors"></div>
     <div class="dialog-row">
       <button type="button" class="btn danger" id="tDelete">Delete</button><span class="spacer"></span>
@@ -566,15 +431,12 @@ body[data-margin="wide"] { --page-w: 600px; }
 <script>
 // ---- IndexedDB: books (incl. file bytes + cover), quotes and marks (notes/stickers) persist in this browser ----
 const dbp = new Promise((res, rej) => {
-  const r = indexedDB.open('bookshelf', 5);
+  const r = indexedDB.open('bookshelf', 5); // stays at 5: browsers that ran newer versions already upgraded to it
   r.onupgradeneeded = () => {
     const db = r.result, has = n => db.objectStoreNames.contains(n);
     if (!has('books')) db.createObjectStore('books', { keyPath: 'id' });
     if (!has('quotes')) db.createObjectStore('quotes', { keyPath: 'id' }).createIndex('bookId', 'bookId');
     if (!has('marks')) db.createObjectStore('marks', { keyPath: 'id' });
-    if (!has('lists')) db.createObjectStore('lists', { keyPath: 'id' });
-    if (!has('stickers')) db.createObjectStore('stickers', { keyPath: 'id' });
-    if (!has('assets')) db.createObjectStore('assets', { keyPath: 'id' });
   };
   // An older copy of the site open in another tab blocks the upgrade; it reloads itself (below) to let it through.
   r.onblocked = () => toast('Updating your library… close other Bookshelf tabs if this takes more than a moment');
@@ -603,126 +465,10 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 const root = document.documentElement;
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1800); }
 
-// ---- Built-in critter art (original SVG): the bunnies decorate the cute themes and appear as stickers ----
-const INK = '#3a3335', BLUSH = '#ffb3c4';
-const eye = (x, kind) => kind === 'happy' ? `<path d="M${x - 3} 35q3-4 6 0" fill="none" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>`
-  : kind === 'closed' ? `<path d="M${x - 3} 34q3 2.5 6 0" fill="none" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>`
-  : `<circle cx="${x}" cy="34" r="${kind === 'big' ? 3.4 : 2.6}" fill="${INK}"/><circle cx="${x + 0.9}" cy="32.9" r="0.9" fill="#fff"/>`;
-const MOUTH = { w: 'M29 40.5q1.5 2 3 0q1.5 2 3 0', smile: 'M28 40q4 5 8 0', wobble: 'M28 42q2-2 4 0q2 2 4 0', o: '' };
-function mochiSVG({ eyes = 'dot', mouth = 'w', body = '#fff', extra = '', ears = 'round' }) {
-  const earsSVG = ears === 'long' // bunny: tall ears with pink insides
-    ? `<ellipse cx="25" cy="13" rx="4.6" ry="12" fill="${body}"/><ellipse cx="39" cy="13" rx="4.6" ry="12" fill="${body}"/>
-       <ellipse cx="25" cy="13" rx="1.8" ry="7.5" fill="#f6b3c3" stroke="none"/><ellipse cx="39" cy="13" rx="1.8" ry="7.5" fill="#f6b3c3" stroke="none"/>`
-    : `<circle cx="19" cy="17" r="6" fill="${body}"/><circle cx="45" cy="17" r="6" fill="${body}"/>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><g stroke="${INK}" stroke-width="2.2" stroke-linejoin="round">
-    ${earsSVG}
-    <path d="M32 13c14.5 0 24.5 9.5 24.5 23S46 58 32 58 7.5 49.5 7.5 36 17.5 13 32 13z" fill="${body}"/></g>
-    <ellipse cx="17" cy="40.5" rx="5" ry="3" fill="${BLUSH}"/><ellipse cx="47" cy="40.5" rx="5" ry="3" fill="${BLUSH}"/>
-    ${eye(24, eyes)}${eye(40, eyes)}
-    ${mouth === 'o' ? `<ellipse cx="32" cy="42" rx="2.4" ry="3" fill="${INK}"/>` : `<path d="${MOUTH[mouth]}" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>`}
-    ${extra}</svg>`;
-}
-const heart = (x, y, s) => `<path transform="translate(${x} ${y}) scale(${s})" d="M0 3C0-1 5-1 5 2 5-1 10-1 10 3 10 6 5 9 5 9S0 6 0 3z" fill="#ff8fab" stroke="${INK}" stroke-width="1.2"/>`;
-const MOCHI = {
-  happy: ['Happy', mochiSVG({})],
-  joy: ['Joy', mochiSVG({ eyes: 'happy', mouth: 'smile', extra: `<path d="M8 10l1.5 3 3 1.5-3 1.5L8 19l-1.5-3L3.5 14.5l3-1.5z" fill="#ffd84d"/><path d="M56 6l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" fill="#ffd84d"/>` })],
-  love: ['Love', mochiSVG({ eyes: 'big', extra: heart(46, 2, 1.1) + heart(52, 13, 0.75) }), ],
-  cry: ['Cry', mochiSVG({ eyes: 'big', mouth: 'wobble', extra: `<path d="M22 38q-2 5 0 8q2-3 0-8z" fill="#8fd0ff"/><path d="M42 38q-2 5 0 8q2-3 0-8z" fill="#8fd0ff"/>` })],
-  snack: ['Snack', mochiSVG({ eyes: 'happy', extra: `<ellipse cx="44" cy="49" rx="9" ry="7" fill="#f2b766" stroke="${INK}" stroke-width="2"/><path d="M38 47q6-4 12 0" fill="none" stroke="#c98a3a" stroke-width="1.6"/>` })],
-  sleepy: ['Sleepy', mochiSVG({ eyes: 'closed', extra: `<text x="48" y="14" font-size="11" font-weight="700" fill="#8fa8ff" font-family="sans-serif">z</text><text x="55" y="7" font-size="8" font-weight="700" fill="#8fa8ff" font-family="sans-serif">z</text>` })],
-  bow: ['Bow', mochiSVG({ extra: `<g transform="translate(44 12)" stroke="${INK}" stroke-width="1.6" fill="#ffa3bd"><path d="M0 0l-8-5v10z"/><path d="M0 0l8-5v10z"/><circle r="2.6"/></g>` })],
-  shock: ['Shock', mochiSVG({ eyes: 'big', mouth: 'o', extra: `<path d="M53 20q-3 5 0 7q3-2 0-7z" fill="#8fd0ff" stroke="${INK}" stroke-width="1.2"/>` })],
-  peach: ['Peach', mochiSVG({ body: '#ffb8c4', mouth: 'w' })],
-  bunny: ['Bunny', mochiSVG({ ears: 'long', body: '#fbefd2', mouth: 'smile' })],
-  bunnylove: ['Bunny love', mochiSVG({ ears: 'long', body: '#fbefd2', eyes: 'happy', extra: heart(48, 26, 0.9) })],
-  bunnysleepy: ['Sleepy bunny', mochiSVG({ ears: 'long', body: '#fbefd2', eyes: 'closed' })],
-};
-const mochiURI = k => 'data:image/svg+xml,' + encodeURIComponent(MOCHI[k][1]);
-const DECOR = ['happy', 'love', 'sleepy', 'joy'];
-// Kawaii themes' decorations (logo, hero, empty pages, bookmark). Gio uses your own stickers when you have some.
-function applyDecor(pack = themePack()) {
-  const mine = pack ? packStickers(pack).map(id => myStickers.get(id)) : [];
-  const art = { happy: 'bunny', love: 'bunnylove', sleepy: 'bunnysleepy', joy: 'bunny' }; // without your stickers, the bunny critters decorate
-  DECOR.forEach((k, i) => root.style.setProperty(`--mochi-${k}`, `url("${mine.length ? mine[[0, 16, 12, 22][i] % mine.length] : mochiURI(art[k] || k)}")`));
-  // Icons on the tabs and main buttons: your picks for this theme (Aa → Icons), else the theme's stickers, else bunnies on cute themes.
-  const auto = mine.length ? mine : root.classList.contains('kawaii') ? ['bunny', 'bunnylove', 'bunnysleepy'].map(mochiURI) : [];
-  const picks = (prefs.icons && prefs.icons[prefs.theme]) || {};
-  currentIcons = Object.fromEntries(ICON_SLOTS.map(([slot], i) =>
-    [slot, myStickers.get(picks[slot]) || (auto.length ? auto[(i * 3 + 1) % auto.length] : null)]));
-  root.classList.toggle('has-icons', Object.values(currentIcons).some(Boolean));
-  for (const [slot, src] of Object.entries(currentIcons)) src ? root.style.setProperty(`--ic-${slot}`, `url("${src}")`) : root.style.removeProperty(`--ic-${slot}`);
-  renderIconSlots();
-}
-const ICON_SLOTS = [['library', 'Library'], ['reader', 'Reader'], ['quotes', 'Quotes'], ['clubs', 'Clubs'], ['settings', 'Settings'], ['add', 'Add books'], ['continue', 'Continue']];
-let currentIcons = {}, pickingSlot = null;
-
-// Aa → Icons: click a slot, pick any of your stickers for it. Saved per theme.
-function renderIconSlots() {
-  const box = document.getElementById('iconSlots');
-  if (!box) return;
-  box.innerHTML = myStickers.size
-    ? ICON_SLOTS.map(([slot, label]) => `<button class="icon-slot" data-slot="${slot}" title="Choose the ${label} icon">
-        ${currentIcons[slot] ? `<img src="${currentIcons[slot]}" alt="">` : '<span class="ph">+</span>'}<span>${label}</span></button>`).join('')
-    : '<p class="muted" style="margin:0">Add a sticker pack (below) to choose icons.</p>';
-}
-function openIconPicker(slot) {
-  pickingSlot = slot;
-  $('icTitle').textContent = `Icon for ${ICON_SLOTS.find(s => s[0] === slot)[1]}`;
-  $('icGrid').innerHTML = packNames().map(p => `<h4>${esc(p)}</h4><div class="ic-grid">${packStickers(p).map(id =>
-    `<button data-pick="${id}" aria-label="Use this sticker"><img src="${myStickers.get(id)}" alt=""></button>`).join('')}</div>`).join('');
-  $('settings').classList.remove('open');
-  $('iconDialog').showModal();
-}
-function setIconPick(id) {
-  prefs.icons = prefs.icons || {};
-  const t = prefs.icons[prefs.theme] = prefs.icons[prefs.theme] || {};
-  if (id) t[pickingSlot] = id; else delete t[pickingSlot];
-  savePrefs(); applyDecor();
-  $('iconDialog').close();
-}
-// ---- Repeating page backgrounds: drawn patterns, or your own image tiled (kept in this browser) ----
-const tuft = (x, y) => `<g transform="translate(${x} ${y})"><ellipse rx="13" ry="6" fill="url(#g)"/>` +
-  `<path d="M-5 2l-1.5-6M0 2V-5M5 2l1.5-6" stroke="#5b4636" stroke-width="1.8" stroke-linecap="round"/></g>`;
-const MEADOW_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="260" height="260"><defs><radialGradient id="g"><stop offset="0" stop-color="#a9dc96" stop-opacity=".9"/><stop offset="1" stop-color="#a9dc96" stop-opacity="0"/></radialGradient></defs>` +
-  [[30, 40], [150, 24], [222, 92], [92, 110], [28, 182], [172, 160], [112, 232], [236, 222], [196, 30], [60, 238]].map(p => tuft(...p)).join('') + '</svg>';
-const dot = 'radial-gradient(circle, color-mix(in srgb, var(--accent) 55%, transparent) 0 6px, transparent 6.6px)';
-const PATTERNS = {
-  none: 'none',
-  sprinkle: 'radial-gradient(rgba(58,51,53,.09) 1.2px, transparent 1.3px) 0 0 / 22px 22px',
-  dots: `${dot} 0 0 / 44px 44px, ${dot} 22px 22px / 44px 44px`,
-  meadow: `url("data:image/svg+xml,${encodeURIComponent(MEADOW_SVG)}") 0 0 / 260px 260px`,
-};
-let bgImage = null; // your uploaded background, as a data URL
-function applyBackground() {
-  const auto = { usagi: 'dots', gio: 'sprinkle' }[prefs.theme] || (root.classList.contains('kawaii') ? 'sprinkle' : 'none');
-  const kind = prefs.bg === 'auto' ? auto : prefs.bg;
-  root.style.setProperty('--pattern', kind === 'mine' ? (bgImage ? `url("${bgImage}") 0 0 / 360px auto` : 'none') : PATTERNS[kind] || 'none');
-  if ($('bgSel')) { $('bgSel').value = prefs.bg; $('bgPick').hidden = prefs.bg !== 'mine'; }
-}
-
-// Stickers are stored as an emoji, "svg:<name>" for built-in critters, or "img:<id>" for yours.
-// "img:<id>" = one of your own imported stickers (kept in this browser; other readers see ✨ instead).
-let myStickers = new Map(); // id -> PNG data URL
-let stickerPack = new Map(); // id -> pack name
-const packNames = () => [...new Set(stickerPack.values())];
-const packStickers = p => [...myStickers.keys()].filter(id => stickerPack.get(id) === p);
-// The pack decorating the current theme: a custom theme's own pack, or your first pack for Gio Theme.
-function themePack() {
-  const c = prefs.custom.find(t => t.id === prefs.theme);
-  if (c) return c.pack && packNames().includes(c.pack) ? c.pack : null;
-  return prefs.theme === 'gio' ? packNames()[0] || null : null;
-}
-const stickerName = s => !s ? '' : s.startsWith('svg:') && MOCHI[s.slice(4)] ? MOCHI[s.slice(4)][0] : s.startsWith('img:') ? 'Sticker' : s;
-function stickerHTML(s, cls = 'stk') {
-  if (s && s.startsWith('svg:') && MOCHI[s.slice(4)]) return `<img class="${cls}" src="${mochiURI(s.slice(4))}" alt="${MOCHI[s.slice(4)][0]} sticker">`;
-  if (s && s.startsWith('img:')) return myStickers.has(s.slice(4)) ? `<img class="${cls}" src="${myStickers.get(s.slice(4))}" alt="Sticker">` : '✨';
-  return esc(s || '');
-}
-
 // ---- Preferences (per-browser convenience; falls back to defaults) ----
-const THEMES = [['usagi', 'Usagi'], ['gio', 'Gio Theme'], ['paper', 'Paper'], ['sepia', 'Sepia'], ['sage', 'Sage'], ['dusk', 'Dusk'], ['midnight', 'Midnight'], ['black', 'Black']];
-let prefs = { theme: 'usagi', size: 110, font: 'Literata', spread: 'one',
-  lh: 1.7, margin: 'normal', palette: 'on', hl: '', bg: 'auto' };
+const THEMES = [['paper', 'Paper'], ['sepia', 'Sepia'], ['sage', 'Sage'], ['dusk', 'Dusk'], ['midnight', 'Midnight'], ['black', 'Black']];
+let prefs = { theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dusk' : 'paper', size: 110, font: 'Literata', spread: 'one',
+  lh: 1.7, margin: 'normal', palette: 'on', hl: '' };
 try { Object.assign(prefs, JSON.parse(localStorage.getItem('bookshelf-prefs')) || {}); } catch {}
 function savePrefs() { try { localStorage.setItem('bookshelf-prefs', JSON.stringify(prefs)); } catch {} }
 
@@ -762,24 +508,16 @@ const swatchFace = '<i style="background:var(--page);color:var(--page-text);bord
 function renderSwatches() {
   $('swatches').innerHTML =
     THEMES.map(([id, name]) => `<button class="swatch" data-theme-id="${id}" data-theme="${id}" style="background:var(--surface);color:var(--text)">${swatchFace}${name}</button>`).join('') +
-    prefs.custom.map(t => {
-      const ids = t.pack ? packStickers(t.pack) : [];
-      const face = ids.length ? `<i style="background:var(--page);border:1px solid var(--border)"><img src="${myStickers.get(ids[0])}" alt="" style="height:20px;vertical-align:middle"></i>` : swatchFace;
-      return `<button class="swatch" data-theme-id="${t.id}" style="${varStyle(t)};background:var(--surface);color:var(--text)">${face}${esc(t.name)}</button>`;
-    }).join('') +
+    prefs.custom.filter(t => !t.pack).map(t => `<button class="swatch" data-theme-id="${t.id}" style="${varStyle(t)};background:var(--surface);color:var(--text)">${swatchFace}${esc(t.name)}</button>`).join('') +
     `<button class="swatch new" id="newTheme" aria-label="Create a new theme"><i>+</i>Create</button>`;
 }
 renderSwatches();
 
 function applyPrefs() {
-  const custom = prefs.custom.find(t => t.id === prefs.theme);
+  const custom = prefs.custom.find(t => t.id === prefs.theme && !t.pack); // sticker-pack themes (from later versions) are hidden here
   if (!custom && !THEMES.some(([id]) => id === prefs.theme)) prefs.theme = 'paper';
   root.dataset.theme = custom ? 'custom' : prefs.theme;
-  root.classList.toggle('kawaii', ['gio', 'usagi'].includes(prefs.theme) || !!(custom && custom.pack));
-  applyDecor();
-  applyBackground();
   setThemeVars(custom);
-  if (typeof renderPalette === 'function' && $('paletteItems').childElementCount) renderPalette(); // palette follows the theme's pack
   $('editTheme').hidden = !custom;
   document.body.dataset.spread = prefs.spread;
   document.body.dataset.margin = prefs.margin;
@@ -796,7 +534,6 @@ $('swatches').onclick = e => {
   const b = e.target.closest('.swatch'); if (!b) return;
   if (b.id === 'newTheme') return openThemeEditor(null);
   prefs.theme = b.dataset.themeId; applyPrefs();
-  if (prefs.theme === 'gio' && !myStickers.size) toast('Tip: add your sticker sheet in Aa → My stickers to decorate Gio Theme');
 };
 $('editTheme').onclick = () => openThemeEditor(prefs.custom.find(t => t.id === prefs.theme));
 
@@ -805,8 +542,6 @@ let editing = null;
 function previewTheme() {
   root.dataset.theme = 'custom';
   setThemeVars(editing);
-  root.classList.toggle('kawaii', !!editing.pack);
-  applyDecor(editing.pack || null);
   styleBook();
 }
 function renderColorInputs() {
@@ -822,7 +557,6 @@ function openThemeEditor(t) {
     [...THEMES, ...prefs.custom.filter(c => !t || c.id !== t.id).map(c => [c.id, c.name])]
       .map(([id, name]) => `<option value="${id}" ${!t && id === base ? 'selected' : ''}>${esc(name)}</option>`).join('');
   $('tDelete').hidden = !t;
-  $('tPack').innerHTML = '<option value="">None</option>' + packNames().map(p => `<option ${p === editing.pack ? 'selected' : ''}>${esc(p)}</option>`).join('');
   renderColorInputs();
   $('settings').classList.remove('open');
   $('themeDialog').showModal();
@@ -835,7 +569,6 @@ $('tColors').oninput = e => {
   e.target.parentElement.querySelector('code').textContent = e.target.value;
   previewTheme();
 };
-$('tPack').onchange = () => { editing.pack = $('tPack').value || null; previewTheme(); };
 $('tCancel').onclick = () => $('themeDialog').close();
 $('themeForm').onsubmit = () => {
   editing.name = $('tName').value.trim() || 'My theme';
@@ -868,32 +601,7 @@ $('marginSeg').onclick = e => {
   prefs.margin = b.dataset.v; applyPrefs();
   if (rendition && rendition.manager) setTimeout(() => rendition.resize(), 50);
 };
-$('iconSlots').onclick = e => { const b = e.target.closest('[data-slot]'); if (b) { e.stopPropagation(); openIconPicker(b.dataset.slot); } };
-$('icGrid').onclick = e => { const b = e.target.closest('[data-pick]'); if (b) setIconPick(b.dataset.pick); };
-$('icDefault').onclick = () => setIconPick(null);
-$('icCancel').onclick = () => $('iconDialog').close();
-$('resetIcons').onclick = e => { e.stopPropagation(); if (prefs.icons) delete prefs.icons[prefs.theme]; savePrefs(); applyDecor(); toast('Icons reset for this theme'); };
-$('bgSel').onchange = () => {
-  prefs.bg = $('bgSel').value;
-  if (prefs.bg === 'mine' && !bgImage) $('bgFile').click();
-  applyPrefs();
-};
-$('bgPick').onclick = () => $('bgFile').click();
-$('bgFile').onchange = async () => {
-  const f = $('bgFile').files[0]; $('bgFile').value = '';
-  if (!f) return;
-  try {
-    const img = await loadImage(f), k = Math.min(1, 900 / img.width), c = document.createElement('canvas');
-    c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-    bgImage = c.toDataURL('image/jpeg', 0.85);
-    await put('assets', { id: 'bg', src: bgImage });
-    prefs.bg = 'mine'; applyPrefs();
-    toast('Background set: it repeats across the page');
-  } catch (e) { toast(`Couldn't use ${f.name}: ${e && e.message || e}`); console.error(e); }
-};
-get('assets', 'bg').then(a => { if (a) { bgImage = a.src; applyBackground(); } });
-$('paletteSeg').onclick =e => { const b = e.target.closest('button'); if (b) { prefs.palette = b.dataset.v; applyPrefs(); } };
+$('paletteSeg').onclick = e => { const b = e.target.closest('button'); if (b) { prefs.palette = b.dataset.v; applyPrefs(); } };
 $('settingsBtn').onclick = e => { e.stopPropagation(); const open = $('settings').classList.toggle('open'); $('settingsBtn').setAttribute('aria-expanded', open); };
 document.addEventListener('click', e => { if (!e.target.closest('#settings')) { $('settings').classList.remove('open'); $('settingsBtn').setAttribute('aria-expanded', false); } });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('settings').classList.remove('open'); hideQuoteBox(); disarm(); } });
@@ -918,7 +626,7 @@ function coverHTML(b, ribbon) {
   const mark = ribbon && b.pct > 0 && b.pct < 1 ? `<span class="ribbon-mark" title="Bookmarked at ${Math.round(b.pct * 100)}%"></span>` : '';
   if (b.cover) {
     if (!coverUrls.has(b.id)) coverUrls.set(b.id, URL.createObjectURL(b.cover));
-    return `<div class="cover">${mark}<img src="${coverUrls.get(b.id)}" alt="" draggable="false"></div>`;
+    return `<div class="cover">${mark}<img src="${coverUrls.get(b.id)}" alt=""></div>`;
   }
   let h = 0; for (const c of b.title) h = (h * 31 + c.charCodeAt(0)) % 360;
   return `<div class="cover">${mark}<div class="gen" style="--h:${h}"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div></div>`;
@@ -956,65 +664,26 @@ async function parseEpub(data) {
   return { title: meta.title || '', author: meta.creator || '', cover };
 }
 
-async function addFiles(files, listId) {
-  const ids = [];
+async function addFiles(files) {
+  let added = 0;
   for (const f of files) {
     if (!/\.epub$/i.test(f.name)) { toast(`${f.name} is not an .epub file`); continue; }
     try {
       toast(`Adding ${f.name}…`);
       const data = await f.arrayBuffer();
-      const meta = await parseEpub(data), id = crypto.randomUUID();
-      await put('books', { id, title: meta.title || f.name.replace(/\.epub$/i, ''), author: meta.author,
+      const meta = await parseEpub(data);
+      await put('books', { id: crypto.randomUUID(), title: meta.title || f.name.replace(/\.epub$/i, ''), author: meta.author,
         data, cover: meta.cover, cfi: null, pct: 0, locations: null, added: Date.now() });
-      ids.push(id);
+      added++;
     } catch (err) { toast(`Could not add ${f.name}: ${err && err.message || err}`); console.error(err); }
   }
-  if (listId) await addToList(listId, ids);
-  if (ids.length) toast(`Added ${ids.length} book${ids.length > 1 ? 's' : ''}`);
+  if (added) toast(`Added ${added} book${added > 1 ? 's' : ''}`);
   show('library');
 }
 
-// ---- Reading lists (kept in this browser): drag a book onto a list chip, or use ⋯ on a book ----
-let activeList = null;
-const LIST_EMOJI = ['🌱', '📚', '💖', '⭐', '🍓', '🌙', '☕', '🔥', '🎀', '🐻'];
-async function getLists() {
-  let lists = await all('lists');
-  if (!lists.length && !prefs.listsMade) { // first visit: start with one list
-    const l = { id: crypto.randomUUID(), name: 'Want to read', emoji: '🌱', bookIds: [], created: Date.now() };
-    await put('lists', l);
-    lists = [l];
-  }
-  prefs.listsMade = true; savePrefs();
-  return lists.sort((a, b) => a.created - b.created);
-}
-async function addToList(listId, ids) {
-  const l = await get('lists', listId);
-  if (!l) return null;
-  for (const id of ids) if (!l.bookIds.includes(id)) l.bookIds.push(id);
-  await put('lists', l);
-  return l;
-}
-async function removeBook(id) {
-  for (const q of (await all('quotes')).filter(q => q.bookId === id)) await del('quotes', q.id);
-  for (const m of (await all('marks')).filter(m => m.bookId === id)) await del('marks', m.id);
-  for (const l of (await all('lists')).filter(l => l.bookIds.includes(id))) { l.bookIds = l.bookIds.filter(x => x !== id); await put('lists', l); }
-  await del('books', id);
-  if (current && current.id === id) closeBook();
-}
-
 async function renderLibrary() {
-  const lists = await getLists();
-  const list = lists.find(l => l.id === activeList) || null;
-  if (!list) activeList = null;
-  const allBooks = (await all('books')).filter(b => !b.clubId).sort((a, b) => (b.opened || b.added) - (a.opened || a.added)); // club copies live under Clubs
-  const books = list ? list.bookIds.map(id => allBooks.find(b => b.id === id)).filter(Boolean) : allBooks;
-  $('listBar').innerHTML =
-    `<button class="list-chip" data-list="" aria-pressed="${!list}">📚 All books <span class="n">${allBooks.length}</span></button>` +
-    lists.map(l => `<button class="list-chip" data-list="${l.id}" aria-pressed="${l === list}" title="Drop books here">${esc(l.emoji)} ${esc(l.name)} <span class="n">${l.bookIds.filter(id => allBooks.some(b => b.id === id)).length}</span></button>`).join('') +
-    `<button class="list-chip new" id="newList">+ New list</button>`;
-  $('libTitle').textContent = list ? `${list.emoji} ${list.name}` : 'Your library';
-  $('listActions').innerHTML = list ? '<button class="btn secondary" id="renameList">Rename</button><button class="btn danger" id="deleteList">Delete list</button>' : '';
-  const last = !list && allBooks.find(b => b.opened && b.pct < 1);
+  const books = (await all('books')).filter(b => !b.clubId).sort((a, b) => (b.opened || b.added) - (a.opened || a.added)); // club copies live under Clubs
+  const last = books.find(b => b.opened && b.pct < 1);
   $('hero').innerHTML = last ? `
     <div class="hero">
       ${coverHTML(last, true)}
@@ -1029,98 +698,27 @@ async function renderLibrary() {
     </div>` : '';
   $('bookCount').textContent = books.length ? `${books.length} book${books.length > 1 ? 's' : ''}` : '';
   $('books').innerHTML = books.length ? books.map(b => `
-    <li class="card" draggable="true" data-book="${b.id}">
+    <li class="card">
       <button class="open" data-open="${b.id}" aria-label="Read ${esc(b.title)}">${coverHTML(b, true)}</button>
       <div class="card-title">${esc(b.title)}</div>
       <div class="card-author">${esc(b.author) || '&nbsp;'}</div>
       <div class="mini"><div class="bar"><div style="width:${b.pct * 100}%"></div></div><span>${b.pct >= 1 ? 'Done' : Math.round(b.pct * 100) + '%'}</span></div>
-      <button class="remove" data-menu="${b.id}" aria-label="Options for ${esc(b.title)}" aria-haspopup="menu">⋯</button>
+      <button class="remove" data-del="${b.id}" aria-label="Remove ${esc(b.title)}">×</button>
     </li>`).join('')
-    : list ? `<li style="grid-column:1/-1"><div class="dropzone"><b>This list is empty</b>Drag books from “All books” onto the ${esc(list.emoji)} chip above, use ⋯ on a book, or drop .epub files on the chip</div></li>`
     : `<li style="grid-column:1/-1"><div class="dropzone" role="button" tabindex="0" id="dropzone"><b>Your shelf is empty</b>Drop .epub files anywhere on this page, or click to choose</div></li>`;
   const dz = $('dropzone');
   if (dz) { dz.onclick = () => fileInput.click(); dz.onkeydown = e => (e.key === 'Enter' || e.key === ' ') && fileInput.click(); }
 }
 $('library').onclick = async e => {
-  const open = e.target.closest('[data-open]'), menu = e.target.closest('[data-menu]'), chip = e.target.closest('[data-list]');
-  if (menu) { e.stopPropagation(); return openBookMenu(menu.dataset.menu, menu); }
-  if (open) return openBook(open.dataset.open);
-  if (chip) { activeList = chip.dataset.list || null; return renderLibrary(); }
-  if (e.target.id === 'newList') return openListDialog(null);
-  if (e.target.id === 'renameList') return openListDialog(await get('lists', activeList));
-  if (e.target.id === 'deleteList') {
-    const l = await get('lists', activeList);
-    if (l && confirm(`Delete the list “${l.name}”? The books stay in your library.`)) { await del('lists', l.id); activeList = null; renderLibrary(); }
+  const open = e.target.closest('[data-open]'), rm = e.target.closest('[data-del]');
+  if (open) openBook(open.dataset.open);
+  if (rm && confirm('Remove this book and its quotes and notes?')) {
+    for (const q of (await all('quotes')).filter(q => q.bookId === rm.dataset.del)) await del('quotes', q.id);
+    for (const m of (await all('marks')).filter(m => m.bookId === rm.dataset.del)) await del('marks', m.id);
+    await del('books', rm.dataset.del);
+    if (current && current.id === rm.dataset.del) closeBook();
+    renderLibrary();
   }
-};
-// Drag a book card (or .epub files) onto a list chip.
-$('books').addEventListener('dragstart', e => {
-  const card = e.target.closest('[data-book]'); if (!card) return;
-  e.dataTransfer.setData('text/x-book', card.dataset.book);
-  e.dataTransfer.effectAllowed = 'copy';
-});
-const chipFor = e => { const c = e.target.closest && e.target.closest('.list-chip[data-list]'); return c && c.dataset.list ? c : null; };
-$('listBar').addEventListener('dragover', e => {
-  const c = chipFor(e), t = [...e.dataTransfer.types];
-  if (c && (t.includes('text/x-book') || t.includes('Files'))) { e.preventDefault(); c.classList.add('over'); }
-});
-$('listBar').addEventListener('dragleave', e => { const c = chipFor(e); if (c) c.classList.remove('over'); });
-$('listBar').addEventListener('drop', async e => {
-  const c = chipFor(e); if (!c) return;
-  e.preventDefault(); e.stopPropagation();
-  c.classList.remove('over'); dragDepth = 0; document.body.classList.remove('dragging');
-  const bookId = e.dataTransfer.getData('text/x-book');
-  if (bookId) { const l = await addToList(c.dataset.list, [bookId]); if (l) toast(`Added to ${l.emoji} ${l.name}`); renderLibrary(); }
-  else if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files, c.dataset.list);
-});
-
-// ---- Book menu (⋯): lists, share link, remove ----
-async function openBookMenu(id, anchor) {
-  const [b, lists] = [await get('books', id), await getLists()];
-  const m = $('bookMenu');
-  m.innerHTML = `<div class="menu-title">${esc(b.title)}</div><div class="menu-h">Lists</div>
-    ${lists.map(l => `<label class="menu-item"><input type="checkbox" data-inlist="${l.id}" ${l.bookIds.includes(id) ? 'checked' : ''}> ${esc(l.emoji)} ${esc(l.name)}</label>`).join('')}
-    <button class="menu-item" data-act="newlist">+ New list…</button><hr>
-    <button class="menu-item" data-act="share">🔗 Share link</button>
-    <button class="menu-item danger" data-act="remove">🗑 Remove from library</button>`;
-  m.hidden = false;
-  const r = anchor.getBoundingClientRect();
-  m.style.left = Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8)) + 'px';
-  m.style.top = Math.max(8, Math.min(r.bottom + 6, innerHeight - m.offsetHeight - 8)) + 'px';
-  m.onchange = async e => {
-    const l = await get('lists', e.target.dataset.inlist); if (!l) return;
-    l.bookIds = e.target.checked ? [...new Set([...l.bookIds, id])] : l.bookIds.filter(x => x !== id);
-    await put('lists', l); renderLibrary();
-  };
-  m.onclick = async e => {
-    const act = e.target.closest('[data-act]'); if (!act) return;
-    m.hidden = true;
-    if (act.dataset.act === 'newlist') openListDialog(null, id);
-    if (act.dataset.act === 'share') shareBook(id);
-    if (act.dataset.act === 'remove' && confirm(`Remove “${b.title}” and its quotes and notes?`)) { await removeBook(id); renderLibrary(); }
-  };
-}
-document.addEventListener('click', e => { if (!e.target.closest('#bookMenu')) $('bookMenu').hidden = true; });
-
-// ---- New / rename list dialog ----
-let editingList = null, listAddBook = null, listEmoji = LIST_EMOJI[0];
-function openListDialog(l, addBookId) {
-  editingList = l; listAddBook = addBookId || null; listEmoji = l ? l.emoji : LIST_EMOJI[0];
-  $('ldTitle').textContent = l ? 'Rename list' : 'New list';
-  $('ldName').value = l ? l.name : '';
-  $('ldEmoji').innerHTML = LIST_EMOJI.map(x => `<button type="button" data-emoji="${x}" aria-pressed="${x === listEmoji}" aria-label="Use ${x}">${x}</button>`).join('');
-  $('listDialog').showModal();
-}
-$('ldEmoji').onclick = e => { const b = e.target.closest('button'); if (!b) return; listEmoji = b.dataset.emoji; $('ldEmoji').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); };
-$('ldCancel').onclick = () => $('listDialog').close();
-$('listForm').onsubmit = async () => {
-  const l = editingList || { id: crypto.randomUUID(), bookIds: [], created: Date.now() };
-  l.name = $('ldName').value.trim() || 'My list';
-  l.emoji = listEmoji;
-  if (listAddBook && !l.bookIds.includes(listAddBook)) l.bookIds.push(listAddBook);
-  await put('lists', l);
-  toast(`${l.emoji} ${l.name} saved`);
-  renderLibrary();
 };
 
 // ---- Reader ----
@@ -1240,18 +838,10 @@ function addHighlight(cfi, color) {
 }
 
 // ---- Annotations: notes + stickers dragged from the palette (or tap, then tap the text) ----
-const EMOJI_STICKERS = ['⭐', '❤️', '💡', '❓', '🔥', '😂', '📌'];
-// With your own stickers the palette shows only those; a pack theme shows just its pack.
-function renderPalette() {
-  const p = themePack();
-  const mine = (p ? packStickers(p) : [...myStickers.keys()]).map(id => 'img:' + id);
-  const list = mine.length ? mine : ['svg:bunny', 'svg:bunnylove', 'svg:bunnysleepy', ...EMOJI_STICKERS]; // no round Mochi critters
-  $('paletteItems').innerHTML =
-    `<button data-act="addstk" aria-label="Add your own stickers" title="Add your own stickers (images or a whole sticker sheet)">➕</button>` +
-    `<button draggable="true" data-kind="note" data-emoji="📝" aria-label="Note" title="Note: drag onto the page">📝</button>` +
-    list.map(s => `<button draggable="true" data-kind="sticker" data-emoji="${s}" aria-label="${esc(stickerName(s))} sticker"
-      title="${s.startsWith('img:') ? 'Drag onto the page · right-click to remove' : 'Sticker: drag onto the page'}">${stickerHTML(s)}</button>`).join('');
-}
+const STICKERS = ['⭐', '❤️', '💡', '❓', '🔥', '😂', '📌'];
+$('paletteItems').innerHTML =
+  `<button draggable="true" data-kind="note" data-emoji="📝" aria-label="Note" title="Note: drag onto the page">📝</button>` +
+  STICKERS.map(s => `<button draggable="true" data-kind="sticker" data-emoji="${s}" aria-label="Sticker ${s}" title="Sticker: drag onto the page">${s}</button>`).join('');
 let armed = null;
 if (matchMedia('(max-width: 560px)').matches) { $('palette').classList.add('closed'); $('paletteToggle').setAttribute('aria-expanded', false); } // phones: start tucked away
 function syncPalette() { $('palette').hidden = !current || prefs.palette === 'off'; }
@@ -1266,205 +856,23 @@ $('paletteToggle').onclick = () => {
   if (closed) disarm();
 };
 $('paletteItems').addEventListener('dragstart', e => {
-  const b = e.target.closest('button[data-kind]'); if (!b) return;
+  const b = e.target.closest('button'); if (!b) return;
   e.dataTransfer.setData('text/x-annot', JSON.stringify({ kind: b.dataset.kind, emoji: b.dataset.emoji }));
   e.dataTransfer.effectAllowed = 'copy';
 });
 $('paletteItems').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
-  if (b.dataset.act === 'addstk') return $('stickerFile').click();
   const same = armed && armed.emoji === b.dataset.emoji;
   disarm();
   if (same) return;
   armed = { kind: b.dataset.kind, emoji: b.dataset.emoji };
   b.setAttribute('aria-pressed', true);
-  $('armHint').textContent = `Tap a word to place ${stickerName(armed.emoji)} · Esc to cancel`;
+  $('armHint').textContent = `Tap a word to place ${armed.emoji} · Esc to cancel`;
   $('armHint').hidden = false;
 };
 
-// ---- Importing your own stickers: single images, or a whole sticker sheet cut apart automatically ----
-$('paletteItems').addEventListener('contextmenu', async e => {
-  const b = e.target.closest('[data-emoji^="img:"]'); if (!b) return;
-  e.preventDefault();
-  if (!confirm('Remove this sticker from your palette?')) return;
-  await del('stickers', b.dataset.emoji.slice(4));
-  loadMyStickers();
-});
-async function loadMyStickers() {
-  const rows = (await all('stickers')).sort((a, b) => a.created - b.created);
-  // Stickers imported before packs existed: one pack per import (imports are minutes apart, a batch is seconds).
-  let n = new Set(rows.map(s => s.pack).filter(Boolean)).size, cur = null, last = 0;
-  for (const s of rows) {
-    if (!s.pack) {
-      if (!cur || s.created - last > 20000) cur = `Pack ${++n}`;
-      s.pack = cur;
-      await put('stickers', s);
-    }
-    last = s.created;
-  }
-  myStickers = new Map(rows.map(s => [s.id, s.src]));
-  stickerPack = new Map(rows.map(s => [s.id, s.pack]));
-  renderSwatches();
-  applyPrefs();
-  renderPalette();
-  renderPackList();
-  redrawMarks();
-}
-
-// Packs: each import is a named pack; a pack can become a theme ("Make theme").
-function renderPackList() {
-  $('packList').innerHTML = packNames().map(p => {
-    const ids = packStickers(p);
-    return `<div class="pack-row"><img src="${myStickers.get(ids[0])}" alt=""><span class="pack-name">${esc(p)} <span class="muted">${ids.length}</span></span>
-      <button class="link-btn" data-packicons="${esc(p)}" title="Use this pack for all icons in the current theme">Icons</button>
-      <button class="link-btn" data-packtheme="${esc(p)}" title="Make a theme decorated with this pack">Make theme</button>
-      <button class="link-btn" data-packrename="${esc(p)}" aria-label="Rename ${esc(p)}" title="Rename">✎</button>
-      <button class="link-btn" data-packdel="${esc(p)}" aria-label="Delete ${esc(p)}" title="Delete pack">✕</button></div>`;
-  }).join('') || '<p class="muted" style="margin:0">No sticker packs yet.</p>';
-}
-$('packList').onclick = async e => {
-  const b = e.target.closest('button'); if (!b) return;
-  e.stopPropagation();
-  if (b.dataset.packicons) { // fill every icon slot from this pack, spread across it so they're all different
-    const ids = packStickers(b.dataset.packicons), step = Math.max(1, Math.floor(ids.length / ICON_SLOTS.length));
-    prefs.icons = prefs.icons || {};
-    prefs.icons[prefs.theme] = Object.fromEntries(ICON_SLOTS.map(([slot], i) => [slot, ids[(i * step) % ids.length]]));
-    savePrefs(); applyDecor();
-    return toast(`Icons now use “${b.dataset.packicons}”. Click any icon above to change just that one`);
-  }
-  if (b.dataset.packtheme) {
-    const p = b.dataset.packtheme, existing = prefs.custom.find(t => t.pack === p);
-    if (existing) { prefs.theme = existing.id; applyPrefs(); return toast(`Switched to your “${existing.name}” theme`); } // no duplicates
-    const t = { id: 'c-' + Date.now().toString(36), name: p, ...readTheme('gio'), pack: p };
-    prefs.custom.push(t); prefs.theme = t.id;
-    renderSwatches(); applyPrefs(); renderPalette();
-    toast(`Theme “${p}” made and switched on`);
-  }
-  if (b.dataset.packrename) {
-    const old = b.dataset.packrename, name = await askText('Rename sticker pack', old);
-    if (!name || name === old) return;
-    for (const s of (await all('stickers')).filter(s => s.pack === old)) { s.pack = name; await put('stickers', s); }
-    prefs.custom.forEach(t => { if (t.pack === old) t.pack = name; });
-    savePrefs(); loadMyStickers();
-  }
-  if (b.dataset.packdel) {
-    const p = b.dataset.packdel;
-    if (!confirm(`Delete the sticker pack “${p}”? Stickers from it already placed in books show as ✨.`)) return;
-    for (const id of packStickers(p)) await del('stickers', id);
-    loadMyStickers();
-  }
-};
-function askText(title, value) {
-  return new Promise(res => {
-    const d = $('packDialog');
-    let ok = false;
-    $('pkTitle').textContent = title;
-    $('pkName').value = value;
-    $('packForm').onsubmit = () => { ok = true; };
-    $('pkCancel').onclick = () => d.close();
-    d.onclose = () => res(ok ? $('pkName').value.trim() : null);
-    d.showModal();
-    $('pkName').select();
-  });
-}
-// What the file really is, from its first bytes (a ".jpg" name can hide an iPhone HEIC, AVIF or WebP).
-async function realImageType(f) {
-  const b = new Uint8Array(await f.slice(0, 32).arrayBuffer()), s = String.fromCharCode(...b);
-  if (b[0] === 0xff && b[1] === 0xd8) return 'JPEG';
-  if (s.startsWith('\x89PNG')) return 'PNG';
-  if (s.startsWith('GIF8')) return 'GIF';
-  if (s.startsWith('RIFF') && s.includes('WEBP')) return 'WebP';
-  if (/ftyp(heic|heix|hevc|mif1|msf1)/.test(s)) return 'HEIC';
-  if (/ftypavi[fs]/.test(s)) return 'AVIF';
-  if (/<svg|<\?xml/.test(s)) return 'SVG';
-  return 'unknown';
-}
-// Opens an image file; falls back to createImageBitmap, and explains failures in plain words.
-async function loadImage(f) {
-  const url = URL.createObjectURL(f);
-  try {
-    return await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
-  } catch {
-    URL.revokeObjectURL(url);
-    try { return await createImageBitmap(f); } catch {}
-    const type = await realImageType(f);
-    throw new Error(type === 'HEIC' ? 'it is really an iPhone HEIC photo (just named .jpg), which browsers can\'t open. Open it and save or screenshot it as PNG/JPG, then add that'
-      : type === 'unknown' ? 'the file isn\'t a picture this browser recognises (it may be damaged or not fully downloaded)'
-      : `it's a ${type} file this browser couldn't open. Try saving it again as PNG or JPG`);
-  }
-}
-
-function scaledCopy(img) {
-  const k = Math.min(1, 160 / Math.max(img.width, img.height)), c = document.createElement('canvas');
-  c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-  return c.toDataURL('image/png');
-}
-// Finds separate stickers on a plain background (the corner colour) by flood-filling connected non-background areas.
-function cutStickers(img) {
-  const S = Math.min(1, 900 / Math.max(img.width, img.height)), w = Math.round(img.width * S), h = Math.round(img.height * S);
-  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-  const ctx = cv.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(img, 0, 0, w, h);
-  const d = ctx.getImageData(0, 0, w, h).data, bg = [d[0], d[1], d[2]];
-  if (d[3] < 20) return [scaledCopy(img)]; // transparent corner: already a cut-out sticker, keep it whole
-  const isBg =p => d[p * 4 + 3] < 20 || Math.abs(d[p * 4] - bg[0]) + Math.abs(d[p * 4 + 1] - bg[1]) + Math.abs(d[p * 4 + 2] - bg[2]) < 30;
-  const seen = new Uint8Array(w * h), boxes = [];
-  for (let start = 0; start < w * h; start++) {
-    if (seen[start] || isBg(start)) continue;
-    let x0 = w, y0 = h, x1 = 0, y1 = 0, n = 0;
-    const stack = [start]; seen[start] = 1;
-    while (stack.length) {
-      const p = stack.pop(), x = p % w, y = (p - x) / w;
-      n++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
-      for (const q of [x > 0 && p - 1, x < w - 1 && p + 1, y > 0 && p - w, y < h - 1 && p + w])
-        if (q !== false && !seen[q] && !isBg(q)) { seen[q] = 1; stack.push(q); }
-    }
-    if (n > w * h * 0.002 && x1 - x0 > 16 && y1 - y0 > 16) boxes.push([x0, y0, x1, y1]);
-  }
-  // Fewer than 2 pieces: treat the whole picture as one sticker.
-  const pieces = boxes.length >= 2 ? boxes.sort((a, b) => (a[1] - b[1]) || (a[0] - b[0])) : [[0, 0, w - 1, h - 1]];
-  return pieces.map(([x0, y0, x1, y1]) => {
-    const sw = x1 - x0 + 1, sh = y1 - y0 + 1, k = Math.min(1, 160 / Math.max(sw, sh) / S);
-    const out = document.createElement('canvas');
-    out.width = Math.round(sw / S * k); out.height = Math.round(sh / S * k);
-    const o = out.getContext('2d', { willReadFrequently: true });
-    o.drawImage(img, x0 / S, y0 / S, sw / S, sh / S, 0, 0, out.width, out.height);
-    if (boxes.length >= 2) { // make the sheet's background colour see-through
-      const px = o.getImageData(0, 0, out.width, out.height);
-      for (let i = 0; i < px.data.length; i += 4)
-        if (Math.abs(px.data[i] - bg[0]) + Math.abs(px.data[i + 1] - bg[1]) + Math.abs(px.data[i + 2] - bg[2]) < 30) px.data[i + 3] = 0;
-      o.putImageData(px, 0, 0);
-    }
-    return out.toDataURL('image/png');
-  });
-}
-async function importStickers(files) {
-  if (!files.length) return;
-  const pack = await askText('Name this sticker pack', files.length === 1 ? files[0].name.replace(/\.[^.]+$/, '') : `Pack ${packNames().length + 1}`);
-  if (!pack) return;
-  let n = 0;
-  for (const f of files) {
-    try {
-      const img = await loadImage(f);
-      for (const src of cutStickers(img)) await put('stickers', { id: crypto.randomUUID(), src, pack, created: Date.now() + n++ });
-      if (img.src) URL.revokeObjectURL(img.src);
-    } catch (e) { toast(`Couldn't add ${f.name}: ${e && e.message || e}`); console.error(e); }
-  }
-  await loadMyStickers();
-  if (n) toast(`Added ${n} sticker${n === 1 ? '' : 's'} as “${pack}”. Use “Make theme” in Aa → My stickers to turn it into a theme`);
-}
-$('stickerFile').onchange = () => { importStickers([...$('stickerFile').files]); $('stickerFile').value = ''; };
-$('addStk').onclick = () => $('stickerFile').click();
-$('clearStk').onclick = async () => {
-  if (!myStickers.size || !confirm('Remove all your stickers? Ones already placed in books show as ✨.')) return;
-  for (const id of myStickers.keys()) await del('stickers', id);
-  loadMyStickers();
-};
-
-const MARK_CSS ='.bs-mark{position:absolute;z-index:5;font-size:18px;line-height:1;cursor:pointer;user-select:none;text-indent:0;' +
-  'transform:translate(-50%,-90%);filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));transition:transform .15s}.bs-mark:hover{transform:translate(-50%,-90%) scale(1.3)}' +
-  '.bs-stk{width:34px;height:34px;display:block}';
+const MARK_CSS = '.bs-mark{position:absolute;z-index:5;font-size:18px;line-height:1;cursor:pointer;user-select:none;text-indent:0;' +
+  'transform:translate(-50%,-90%);filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));transition:transform .15s}.bs-mark:hover{transform:translate(-50%,-90%) scale(1.3)}';
 function wireAnnotations(c) {
   const d = c.document, st = d.createElement('style');
   st.textContent = MARK_CSS;
@@ -1509,7 +917,7 @@ async function placeMark(c, x, y, spec) {
   marks.push(m);
   drawMarks(c);
   clubShare(m.bookId, { id: m.id, kind: 'sticker', cfi: m.cfi, emoji: m.emoji, word: m.word, chapter: m.chapter, pct: current.pct });
-  toast(`${stickerName(m.emoji)} added`);
+  toast(`${m.emoji} added`);
 }
 
 function drawMarks(c) {
@@ -1520,7 +928,7 @@ function drawMarks(c) {
     if (new ePub.CFI(m.cfi).spinePos !== c.sectionIndex) continue;
     let rect; try { rect = c.range(m.cfi).getBoundingClientRect(); } catch { continue; }
     const el = d.createElement('span');
-    el.className = 'bs-mark'; el.dataset.id = m.id; el.innerHTML = stickerHTML(m.emoji, 'bs-stk');
+    el.className = 'bs-mark'; el.dataset.id = m.id; el.textContent = /^(svg|img):/.test(m.emoji || '') ? '✨' : m.emoji; // picture stickers from later versions
     el.title = m.kind === 'note' ? m.text : 'Sticker';
     const nth = onWord.get(m.cfi) || 0; onWord.set(m.cfi, nth + 1);
     el.style.left = (rect.left + rect.width / 2 + nth * 20 + d.defaultView.scrollX) + 'px';
@@ -1536,7 +944,7 @@ function openMark(id, fresh) {
   if (!editingMark) return;
   const note = editingMark.kind === 'note', other = editingMark.readonly; // another club member's mark
   $('mdTitle').textContent = (other ? `${editingMark.author}'s ` : '') +
-    (note ? `${fresh ? 'New note' : other ? 'note' : 'Note'} on “${editingMark.word}”` : `${other ? 'sticker' : 'Sticker'} ${stickerName(editingMark.emoji)} on “${editingMark.word}”`);
+    (note ? `${fresh ? 'New note' : other ? 'note' : 'Note'} on “${editingMark.word}”` : `${other ? 'sticker' : 'Sticker'} ${editingMark.emoji} on “${editingMark.word}”`);
   $('mdText').hidden = !note;
   $('mdSave').hidden = !note || other;
   $('mdText').readOnly = other;
@@ -1610,11 +1018,10 @@ async function renderQuotes() {
     .filter(q => (!chosen || q.bookTitle === chosen) && (!term || (q.text + ' ' + q.note + ' ' + q.bookTitle).toLowerCase().includes(term)))
     .sort((a, b) => b.created - a.created);
   $('quoteCount').textContent = items.length ? `${allQs.length} quote${allQs.length === 1 ? '' : 's'} · ${notes.length} note${notes.length === 1 ? '' : 's'}` : '';
-  const tp = themePack(), cardStk = tp ? packStickers(tp).map(id => myStickers.get(id)) : []; // pack themes: a different sticker on each card
-  $('quoteList').innerHTML = shown.length ? shown.map((q, i) => {
+  $('quoteList').innerHTML = shown.length ? shown.map(q => {
     const b = byId.get(q.bookId), isNote = q.store === 'marks';
     return `
-    <article class="quote${isNote ? ' is-note' : ''}" style="--qc:${esc(q.color || (isNote ? 'var(--accent)' : 'var(--hl)'))}${cardStk.length ? `;--qs:url('${cardStk[i % cardStk.length]}')` : ''}">
+    <article class="quote${isNote ? ' is-note' : ''}" style="--qc:${esc(q.color || (isNote ? 'var(--accent)' : 'var(--hl)'))}">
       ${isNote ? `<div class="kind">Note on “${esc(q.word)}”</div>` : ''}
       <p>${esc(q.text)}</p>
       ${q.note ? `<div class="note">${esc(q.note)}</div>` : ''}
@@ -1899,7 +1306,7 @@ async function renderClubDetail(v, id) {
     <div class="panel"><h3>Club notes <span class="count">${notes.length}</span></h3>
       ${notes.length ? notes.map(n => `<div class="feed-item">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${avatar(n.author)}<b>${esc(n.author)}</b>
-          <span class="muted">${n.kind === 'quote' ? 'quoted' : n.kind === 'note' ? `noted on “${esc(n.word || '')}”` : `stuck ${stickerHTML(n.emoji)} on “${esc(n.word || '')}”`}${n.chapter ? ' · ' + esc(n.chapter) : ''}</span></div>
+          <span class="muted">${n.kind === 'quote' ? 'quoted' : n.kind === 'note' ? `noted on “${esc(n.word || '')}”` : `stuck ${/^(svg|img):/.test(n.emoji || '') ? '✨' : esc(n.emoji || '')} on “${esc(n.word || '')}”`}${n.chapter ? ' · ' + esc(n.chapter) : ''}</span></div>
         ${n.text ? `<p>${n.kind === 'quote' ? '“' + esc(n.text) + '”' : esc(n.text)}</p>` : ''}${n.note ? `<div class="muted">${esc(n.note)}</div>` : ''}
         <button class="link-btn" data-gonote="${esc(n.cfi)}" style="padding:4px 0 0">Open in book →</button></div>`).join('')
         : '<p class="muted">Quotes, notes and stickers members add while reading show up here.</p>'}
@@ -2108,73 +1515,8 @@ function presenceReaders(clubId) {
   return m;
 }
 
-// ===================== Share links: upload once, the link adds the book to the opener's library =====================
-// Files live at shared-books/<your user id>/<random id>.epub. Signed-in readers can upload; anyone with the exact link can download.
-const SHARE_RE = /^[0-9a-f-]{36}\/[0-9a-f-]{36}$/;
-const shareLink = path => `${location.origin}${location.pathname}#share=${path}`;
-async function shareBook(id) {
-  const b = await get('books', id);
-  if (!sb) return toast('Sharing needs an internet connection');
-  if (!me) await loadMe();
-  if (!me) { toast('Sign in on the Clubs tab to share books'); return show('clubs'); }
-  if (!b.shareId) {
-    toast('Uploading the book…');
-    const path = `${me.id}/${crypto.randomUUID()}`;
-    const up = await sb.storage.from('shared-books').upload(path + '.epub', new Blob([b.data], { type: 'application/epub+zip' }), { contentType: 'application/epub+zip' });
-    if (up.error) return toast(`Couldn't upload: ${up.error.message}`);
-    b.shareId = path;
-    await put('books', b);
-  }
-  $('sdTitle').textContent = `Share “${b.title}”`;
-  $('sdText').textContent = 'Anyone who opens this link gets the book added to their library. Only share books you\'re allowed to share.';
-  $('sdLink').value = shareLink(b.shareId);
-  $('sdNative').hidden = !navigator.share;
-  $('shareDialog').dataset.book = id;
-  $('shareDialog').showModal();
-  $('sdLink').select();
-}
-$('sdCopy').onclick = async () => { await navigator.clipboard.writeText($('sdLink').value); toast('Link copied'); };
-$('sdNative').onclick = () => navigator.share({ title: $('sdTitle').textContent, url: $('sdLink').value }).catch(() => {});
-$('sdClose').onclick = () => $('shareDialog').close();
-$('sdStop').onclick = async () => {
-  const b = await get('books', $('shareDialog').dataset.book);
-  if (!b || !b.shareId) return $('shareDialog').close();
-  const { error } = await sb.storage.from('shared-books').remove([b.shareId + '.epub']);
-  if (error) return toast(`Couldn't stop sharing: ${error.message}`);
-  delete b.shareId;
-  await put('books', b);
-  $('shareDialog').close();
-  toast('Link switched off');
-};
-
-async function receiveShare() {
-  const m = location.hash.match(/^#share=(.+)$/);
-  if (!m) return;
-  history.replaceState(null, '', location.pathname + location.search);
-  const path = decodeURIComponent(m[1]);
-  if (!SHARE_RE.test(path)) return toast('That share link looks broken');
-  const have = (await all('books')).find(b => b.sharedFrom === path || b.shareId === path);
-  if (have) { show('library'); return toast(`“${have.title}” is already in your library`); }
-  toast('Adding the shared book…');
-  try {
-    const res = await fetch(`${SB_URL}/storage/v1/object/public/shared-books/${path}.epub`);
-    if (!res.ok) return toast('This share link was switched off or doesn\'t exist');
-    const data = await res.arrayBuffer(), meta = await parseEpub(data), id = crypto.randomUUID();
-    await put('books', { id, title: meta.title || 'Shared book', author: meta.author, cover: meta.cover, data, sharedFrom: path,
-      cfi: null, pct: 0, locations: null, added: Date.now() });
-    const lists = await getLists();
-    if (lists[0]) await addToList(lists[0].id, [id]); // lands in the first list (e.g. "Want to read")
-    activeList = null;
-    show('library');
-    toast(`Added “${meta.title || 'Shared book'}” to your library${lists[0] ? ` and ${lists[0].emoji} ${lists[0].name}` : ''}`);
-  } catch (e) { toast(`Couldn't add the shared book: ${e.message}`); }
-}
-window.addEventListener('hashchange', receiveShare);
-
 applyPrefs();
-loadMyStickers();
 renderLibrary();
-receiveShare();
 </script>
 </body>
 </html>
