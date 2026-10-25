@@ -393,6 +393,9 @@ body[data-margin="wide"] { --page-w: 600px; }
       <button data-v="narrow">Narrow</button><button data-v="normal">Normal</button><button data-v="wide">Wide</button></div></div>
     <div class="group"><h4>Annotation tools</h4><div class="seg" id="paletteSeg">
       <button data-v="on">Show</button><button data-v="off">Hide</button></div></div>
+    <div class="group"><h4>My stickers</h4>
+      <div class="stepper"><output id="myStkOut" style="text-align:left">0 stickers</output><button id="addStk" style="width:auto;padding:0 12px">Add</button><button id="clearStk" style="width:auto;padding:0 12px">Clear</button></div>
+      <p class="muted" style="margin:6px 0 0">Add images or a whole sticker sheet; it's cut into separate stickers. Kept in this browser.</p></div>
   </div>
 </header>
 
@@ -455,6 +458,7 @@ body[data-margin="wide"] { --page-w: 600px; }
 <div id="bookmark" role="status" aria-live="polite"><div class="ribbon" aria-hidden="true">♥</div><div class="bm-text"><b>Saved your place</b><small id="bmWhere"></small></div></div>
 
 <div id="bookMenu" role="menu" hidden></div>
+<input id="stickerFile" type="file" accept="image/*" multiple hidden>
 
 <dialog id="listDialog" class="dlg" aria-labelledby="ldTitle">
   <form method="dialog" id="listForm">
@@ -504,13 +508,14 @@ body[data-margin="wide"] { --page-w: 600px; }
 <script>
 // ---- IndexedDB: books (incl. file bytes + cover), quotes and marks (notes/stickers) persist in this browser ----
 const dbp = new Promise((res, rej) => {
-  const r = indexedDB.open('bookshelf', 3);
+  const r = indexedDB.open('bookshelf', 4);
   r.onupgradeneeded = () => {
     const db = r.result, has = n => db.objectStoreNames.contains(n);
     if (!has('books')) db.createObjectStore('books', { keyPath: 'id' });
     if (!has('quotes')) db.createObjectStore('quotes', { keyPath: 'id' }).createIndex('bookId', 'bookId');
     if (!has('marks')) db.createObjectStore('marks', { keyPath: 'id' });
     if (!has('lists')) db.createObjectStore('lists', { keyPath: 'id' });
+    if (!has('stickers')) db.createObjectStore('stickers', { keyPath: 'id' });
   };
   r.onsuccess = () => res(r.result);
   r.onerror = () => rej(r.error);
@@ -563,8 +568,14 @@ const MOCHI = {
 const mochiURI = k => 'data:image/svg+xml,' + encodeURIComponent(MOCHI[k][1]);
 for (const k of ['happy', 'love', 'sleepy', 'joy']) root.style.setProperty(`--mochi-${k}`, `url("${mochiURI(k)}")`);
 // Stickers are stored as an emoji, or "svg:<name>" for the Mochi pack.
-const stickerName = s => s && s.startsWith('svg:') && MOCHI[s.slice(4)] ? MOCHI[s.slice(4)][0] + ' mochi' : s;
-const stickerHTML = (s, cls = 'stk') => s && s.startsWith('svg:') && MOCHI[s.slice(4)] ? `<img class="${cls}" src="${mochiURI(s.slice(4))}" alt="${MOCHI[s.slice(4)][0]} sticker">` : esc(s || '');
+// "img:<id>" = one of your own imported stickers (kept in this browser; other readers see ✨ instead).
+let myStickers = new Map(); // id -> PNG data URL
+const stickerName = s => !s ? '' : s.startsWith('svg:') && MOCHI[s.slice(4)] ? MOCHI[s.slice(4)][0] + ' mochi' : s.startsWith('img:') ? 'Sticker' : s;
+function stickerHTML(s, cls = 'stk') {
+  if (s && s.startsWith('svg:') && MOCHI[s.slice(4)]) return `<img class="${cls}" src="${mochiURI(s.slice(4))}" alt="${MOCHI[s.slice(4)][0]} sticker">`;
+  if (s && s.startsWith('img:')) return myStickers.has(s.slice(4)) ? `<img class="${cls}" src="${myStickers.get(s.slice(4))}" alt="Sticker">` : '✨';
+  return esc(s || '');
+}
 
 // ---- Preferences (per-browser convenience; falls back to defaults) ----
 const THEMES = [['mochi', 'Mochi'], ['paper', 'Paper'], ['sepia', 'Sepia'], ['sage', 'Sage'], ['dusk', 'Dusk'], ['midnight', 'Midnight'], ['black', 'Black']];
@@ -1047,10 +1058,18 @@ function addHighlight(cfi, color) {
 }
 
 // ---- Annotations: notes + stickers dragged from the palette (or tap, then tap the text) ----
-const STICKERS = [...Object.keys(MOCHI).map(k => 'svg:' + k), '⭐', '❤️', '💡', '❓', '🔥', '😂', '📌'];
-$('paletteItems').innerHTML =
-  `<button draggable="true" data-kind="note" data-emoji="📝" aria-label="Note" title="Note: drag onto the page">📝</button>` +
-  STICKERS.map(s => `<button draggable="true" data-kind="sticker" data-emoji="${s}" aria-label="${s.startsWith('svg:') ? MOCHI[s.slice(4)][0] : s} sticker" title="Sticker: drag onto the page">${stickerHTML(s)}</button>`).join('');
+const EMOJI_STICKERS = ['⭐', '❤️', '💡', '❓', '🔥', '😂', '📌'];
+// Your own stickers replace the Mochi pack in the palette once you've imported some.
+function renderPalette() {
+  const mine = [...myStickers.keys()].map(id => 'img:' + id);
+  const list = [...(mine.length ? mine : Object.keys(MOCHI).map(k => 'svg:' + k)), ...EMOJI_STICKERS];
+  $('paletteItems').innerHTML =
+    `<button data-act="addstk" aria-label="Add your own stickers" title="Add your own stickers (images or a whole sticker sheet)">➕</button>` +
+    `<button draggable="true" data-kind="note" data-emoji="📝" aria-label="Note" title="Note: drag onto the page">📝</button>` +
+    list.map(s => `<button draggable="true" data-kind="sticker" data-emoji="${s}" aria-label="${esc(stickerName(s))} sticker"
+      title="${s.startsWith('img:') ? 'Drag onto the page · right-click to remove' : 'Sticker: drag onto the page'}">${stickerHTML(s)}</button>`).join('');
+  $('myStkOut').textContent = `${mine.length} sticker${mine.length === 1 ? '' : 's'}`;
+}
 let armed = null;
 if (matchMedia('(max-width: 560px)').matches) { $('palette').classList.add('closed'); $('paletteToggle').setAttribute('aria-expanded', false); } // phones: start tucked away
 function syncPalette() { $('palette').hidden = !current || prefs.palette === 'off'; }
@@ -1065,12 +1084,13 @@ $('paletteToggle').onclick = () => {
   if (closed) disarm();
 };
 $('paletteItems').addEventListener('dragstart', e => {
-  const b = e.target.closest('button'); if (!b) return;
+  const b = e.target.closest('button[data-kind]'); if (!b) return;
   e.dataTransfer.setData('text/x-annot', JSON.stringify({ kind: b.dataset.kind, emoji: b.dataset.emoji }));
   e.dataTransfer.effectAllowed = 'copy';
 });
 $('paletteItems').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.act === 'addstk') return $('stickerFile').click();
   const same = armed && armed.emoji === b.dataset.emoji;
   disarm();
   if (same) return;
@@ -1080,7 +1100,80 @@ $('paletteItems').onclick = e => {
   $('armHint').hidden = false;
 };
 
-const MARK_CSS = '.bs-mark{position:absolute;z-index:5;font-size:18px;line-height:1;cursor:pointer;user-select:none;text-indent:0;' +
+// ---- Importing your own stickers: single images, or a whole sticker sheet cut apart automatically ----
+$('paletteItems').addEventListener('contextmenu', async e => {
+  const b = e.target.closest('[data-emoji^="img:"]'); if (!b) return;
+  e.preventDefault();
+  if (!confirm('Remove this sticker from your palette?')) return;
+  await del('stickers', b.dataset.emoji.slice(4));
+  loadMyStickers();
+});
+async function loadMyStickers() {
+  myStickers = new Map((await all('stickers')).sort((a, b) => a.created - b.created).map(s => [s.id, s.src]));
+  renderPalette();
+  redrawMarks();
+}
+const loadImage = f => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('not an image')); i.src = URL.createObjectURL(f); });
+
+// Finds separate stickers on a plain background (the corner colour) by flood-filling connected non-background areas.
+function cutStickers(img) {
+  const S = Math.min(1, 900 / Math.max(img.width, img.height)), w = Math.round(img.width * S), h = Math.round(img.height * S);
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0, w, h);
+  const d = ctx.getImageData(0, 0, w, h).data, bg = [d[0], d[1], d[2]];
+  const isBg = p => d[p * 4 + 3] < 20 || Math.abs(d[p * 4] - bg[0]) + Math.abs(d[p * 4 + 1] - bg[1]) + Math.abs(d[p * 4 + 2] - bg[2]) < 30;
+  const seen = new Uint8Array(w * h), boxes = [];
+  for (let start = 0; start < w * h; start++) {
+    if (seen[start] || isBg(start)) continue;
+    let x0 = w, y0 = h, x1 = 0, y1 = 0, n = 0;
+    const stack = [start]; seen[start] = 1;
+    while (stack.length) {
+      const p = stack.pop(), x = p % w, y = (p - x) / w;
+      n++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      for (const q of [x > 0 && p - 1, x < w - 1 && p + 1, y > 0 && p - w, y < h - 1 && p + w])
+        if (q !== false && !seen[q] && !isBg(q)) { seen[q] = 1; stack.push(q); }
+    }
+    if (n > w * h * 0.002 && x1 - x0 > 16 && y1 - y0 > 16) boxes.push([x0, y0, x1, y1]);
+  }
+  // Fewer than 2 pieces: treat the whole picture as one sticker.
+  const pieces = boxes.length >= 2 ? boxes.sort((a, b) => (a[1] - b[1]) || (a[0] - b[0])) : [[0, 0, w - 1, h - 1]];
+  return pieces.map(([x0, y0, x1, y1]) => {
+    const sw = x1 - x0 + 1, sh = y1 - y0 + 1, k = Math.min(1, 160 / Math.max(sw, sh) / S);
+    const out = document.createElement('canvas');
+    out.width = Math.round(sw / S * k); out.height = Math.round(sh / S * k);
+    const o = out.getContext('2d', { willReadFrequently: true });
+    o.drawImage(img, x0 / S, y0 / S, sw / S, sh / S, 0, 0, out.width, out.height);
+    if (boxes.length >= 2) { // make the sheet's background colour see-through
+      const px = o.getImageData(0, 0, out.width, out.height);
+      for (let i = 0; i < px.data.length; i += 4)
+        if (Math.abs(px.data[i] - bg[0]) + Math.abs(px.data[i + 1] - bg[1]) + Math.abs(px.data[i + 2] - bg[2]) < 30) px.data[i + 3] = 0;
+      o.putImageData(px, 0, 0);
+    }
+    return out.toDataURL('image/png');
+  });
+}
+async function importStickers(files) {
+  let n = 0;
+  for (const f of files) {
+    try {
+      const img = await loadImage(f);
+      for (const src of cutStickers(img)) await put('stickers', { id: crypto.randomUUID(), src, created: Date.now() + n++ });
+      URL.revokeObjectURL(img.src);
+    } catch { toast(`${f.name} isn't an image`); }
+  }
+  await loadMyStickers();
+  if (n) toast(`Added ${n} sticker${n === 1 ? '' : 's'} to your palette`);
+}
+$('stickerFile').onchange = () => { importStickers([...$('stickerFile').files]); $('stickerFile').value = ''; };
+$('addStk').onclick = () => $('stickerFile').click();
+$('clearStk').onclick = async () => {
+  if (!myStickers.size || !confirm('Remove all your stickers? Ones already placed in books show as ✨.')) return;
+  for (const id of myStickers.keys()) await del('stickers', id);
+  loadMyStickers();
+};
+
+const MARK_CSS ='.bs-mark{position:absolute;z-index:5;font-size:18px;line-height:1;cursor:pointer;user-select:none;text-indent:0;' +
   'transform:translate(-50%,-90%);filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));transition:transform .15s}.bs-mark:hover{transform:translate(-50%,-90%) scale(1.3)}' +
   '.bs-stk{width:34px;height:34px;display:block}';
 function wireAnnotations(c) {
@@ -1789,6 +1882,7 @@ async function receiveShare() {
 window.addEventListener('hashchange', receiveShare);
 
 applyPrefs();
+loadMyStickers();
 renderLibrary();
 receiveShare();
 </script>
