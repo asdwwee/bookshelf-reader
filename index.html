@@ -553,8 +553,14 @@ const dbp = new Promise((res, rej) => {
     if (!has('stickers')) db.createObjectStore('stickers', { keyPath: 'id' });
     if (!has('assets')) db.createObjectStore('assets', { keyPath: 'id' });
   };
-  r.onsuccess = () => res(r.result);
-  r.onerror = () => rej(r.error);
+  // An older copy of the site open in another tab blocks the upgrade; it reloads itself (below) to let it through.
+  r.onblocked = () => toast('Updating your library… close other Bookshelf tabs if this takes more than a moment');
+  r.onsuccess = () => {
+    const db = r.result;
+    db.onversionchange = () => { db.close(); toast('Bookshelf was updated. Reloading…'); setTimeout(() => location.reload(), 1000); };
+    res(db);
+  };
+  r.onerror = () => { toast(`Can't open your library: ${r.error && r.error.message}`); rej(r.error); };
 });
 async function tx(store, mode, fn) {
   const db = await dbp;
@@ -882,6 +888,7 @@ async function parseEpub(data) {
   const meta = await ep.loaded.metadata;
   let cover = null;
   try { const u = await ep.coverUrl(); if (u) cover = await (await fetch(u)).blob(); } catch {}
+  await ep.ready.catch(() => {}); // let epub.js finish loading before tearing it down (avoids stray errors)
   ep.destroy();
   return { title: meta.title || '', author: meta.creator || '', cover };
 }
@@ -891,12 +898,13 @@ async function addFiles(files, listId) {
   for (const f of files) {
     if (!/\.epub$/i.test(f.name)) { toast(`${f.name} is not an .epub file`); continue; }
     try {
+      toast(`Adding ${f.name}…`);
       const data = await f.arrayBuffer();
       const meta = await parseEpub(data), id = crypto.randomUUID();
       await put('books', { id, title: meta.title || f.name.replace(/\.epub$/i, ''), author: meta.author,
         data, cover: meta.cover, cfi: null, pct: 0, locations: null, added: Date.now() });
       ids.push(id);
-    } catch (err) { toast(`Could not read ${f.name}`); console.error(err); }
+    } catch (err) { toast(`Could not add ${f.name}: ${err && err.message || err}`); console.error(err); }
   }
   if (listId) await addToList(listId, ids);
   if (ids.length) toast(`Added ${ids.length} book${ids.length > 1 ? 's' : ''}`);
