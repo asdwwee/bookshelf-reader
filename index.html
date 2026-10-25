@@ -48,6 +48,12 @@
   --accent: #ec7f9a; --accent-soft: #fde5eb; --hl: #ffc2d1; --page: #fffdfb; --page-text: #3a3335; --on-accent: #fff;
   --shadow: 0 0 0 1.5px rgba(58,51,53,.12), 0 6px 16px rgba(90,60,70,.10);
 }
+/* Gio: your own sticker sheet's colours; decorated with the stickers you import (My stickers) */
+[data-theme="gio"] {
+  --bg: #e6e6e6; --surface: #ffffff; --text: #2a2526; --muted: #85797c; --border: #dcd6d7;
+  --accent: #f08aa8; --accent-soft: #fde3ea; --hl: #ffcbd8; --page: #ffffff; --page-text: #2a2526; --on-accent: #fff;
+  --shadow: 0 0 0 1.5px rgba(42,37,38,.55), 0 5px 12px rgba(0,0,0,.08);
+}
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, sans-serif; display: flex; flex-direction: column; transition: background .25s, color .25s; }
@@ -169,6 +175,7 @@ body[data-margin="wide"] { --page-w: 600px; }
 .filters input, .filters select { padding: 9px 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--text); font: inherit; }
 .filters input { flex: 1; min-width: 200px; }
 #quoteList { columns: 320px; column-gap: 18px; margin-top: 20px; }
+#quoteList .empty { column-span: all; }
 .quote { break-inside: avoid; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 18px 12px; margin-bottom: 18px; box-shadow: var(--shadow); position: relative; }
 .quote::before { content: "“"; position: absolute; top: -6px; left: 14px; font: 600 54px Literata, serif; color: var(--accent); opacity: .35; }
 .quote p { margin: 10px 0 0; font: 16px/1.6 Literata, Georgia, serif; }
@@ -343,24 +350,26 @@ body[data-margin="wide"] { --page-w: 600px; }
 .emoji-pick { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
 .emoji-pick button { width: 40px; height: 40px; border-radius: 10px; border: 2px solid var(--border); background: var(--bg); font-size: 19px; cursor: pointer; }
 .emoji-pick button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
-[data-theme="mochi"] .dlg h3 { font-family: "Zen Maru Gothic", sans-serif; font-weight: 700; }
+.kawaii .dlg h3 { font-family: "Zen Maru Gothic", sans-serif; font-weight: 700; }
 
 /* ---- Mochi theme extras: rounded type, dotted sheet, white sticker outlines, mascot ---- */
-[data-theme="mochi"] body { background: radial-gradient(rgba(58,51,53,.09) 1.2px, transparent 1.3px) 0 0 / 22px 22px, var(--bg); }
-[data-theme="mochi"] body, [data-theme="mochi"] button, [data-theme="mochi"] input, [data-theme="mochi"] select, [data-theme="mochi"] textarea { font-family: "Zen Maru Gothic", Inter, sans-serif; }
-[data-theme="mochi"] :is(.brand, h2.section-title, .hero h3, .club-head h2, .panel h3, .club-card h3, .dropzone b, #readerEmpty b, .auth-card h2, #themeDialog h3, #markDialog h3) { font-family: "Zen Maru Gothic", sans-serif; font-weight: 700; }
-[data-theme="mochi"] :is(.hero, .panel, .club-card, .quote, .auth-card, .dropzone, #settings, #palette, #together) { border: 3px solid #fff; border-radius: 24px; box-shadow: var(--shadow); }
-[data-theme="mochi"] .cover { border: 3px solid #fff; border-radius: 12px; }
-[data-theme="mochi"] .btn { border-radius: 999px; }
-[data-theme="mochi"] .tabs, [data-theme="mochi"] .tab { border-radius: 999px; }
-[data-theme="mochi"] .brand svg { display: none; }
-[data-theme="mochi"] .brand::before { content: ""; width: 34px; height: 34px; background: var(--mochi-happy) center / contain no-repeat; }
-[data-theme="mochi"] .hero { position: relative; }
-[data-theme="mochi"] .hero::after { content: ""; position: absolute; right: 18px; bottom: -18px; width: 84px; height: 84px; background: var(--mochi-love) center / contain no-repeat; filter: drop-shadow(0 3px 4px rgba(0,0,0,.12)); }
-[data-theme="mochi"] .quote::before { content: ""; top: -18px; left: 10px; width: 36px; height: 36px; opacity: 1; background: var(--mochi-happy) center / contain no-repeat; }
-[data-theme="mochi"] .empty::before, [data-theme="mochi"] .dropzone::before { content: ""; display: block; width: 72px; height: 72px; margin: 0 auto 8px; background: var(--mochi-sleepy) center / contain no-repeat; }
-[data-theme="mochi"] .ribbon-mark::after, [data-theme="mochi"] #bookmark .ribbon { font-size: 0; }
-[data-theme="mochi"] #bookmark .ribbon::before { content: ""; width: 30px; height: 30px; background: var(--mochi-joy) center / contain no-repeat; }
+.kawaii body { background: radial-gradient(rgba(58,51,53,.09) 1.2px, transparent 1.3px) 0 0 / 22px 22px, var(--bg); }
+.kawaii body, .kawaii button, .kawaii input, .kawaii select, .kawaii textarea { font-family: "Zen Maru Gothic", Inter, sans-serif; }
+.kawaii :is(.brand, h2.section-title, .hero h3, .club-head h2, .panel h3, .club-card h3, .dropzone b, #readerEmpty b, .auth-card h2, #themeDialog h3, #markDialog h3) { font-family: "Zen Maru Gothic", sans-serif; font-weight: 700; }
+.kawaii :is(.hero, .panel, .club-card, .quote, .auth-card, .dropzone, #settings, #palette, #together) { border: 3px solid #fff; border-radius: 24px; box-shadow: var(--shadow); }
+.kawaii .cover { border: 3px solid #fff; border-radius: 12px; }
+.kawaii .btn { border-radius: 999px; }
+.kawaii .tabs, .kawaii .tab { border-radius: 999px; }
+.kawaii .brand svg { display: none; }
+.kawaii .brand::before { content: ""; width: 34px; height: 34px; background: var(--mochi-happy) center / contain no-repeat; }
+.kawaii .hero { position: relative; }
+.kawaii .hero::after { content: ""; position: absolute; right: 18px; bottom: -18px; width: 84px; height: 84px; background: var(--mochi-love) center / contain no-repeat; filter: drop-shadow(0 3px 4px rgba(0,0,0,.12)); }
+[data-theme="gio"] .brand::before { width: 40px; height: 40px; }
+[data-theme="gio"] .hero::after { width: 110px; height: 110px; bottom: -26px; }
+.kawaii .quote::before { content: ""; top: -18px; left: 10px; width: 36px; height: 36px; opacity: 1; background: var(--qs, var(--mochi-happy)) center / contain no-repeat; }
+.kawaii .empty::before, .kawaii .dropzone::before { content: ""; display: block; width: 72px; height: 72px; margin: 0 auto 8px; background: var(--mochi-sleepy) center / contain no-repeat; }
+.kawaii .ribbon-mark::after, .kawaii #bookmark .ribbon { font-size: 0; }
+.kawaii #bookmark .ribbon::before { content: ""; width: 30px; height: 30px; background: var(--mochi-joy) center / contain no-repeat; }
 .stk { display: inline-block; width: 1.6em; height: 1.6em; vertical-align: middle; }
 #palette .stk { width: 30px; height: 30px; }
 
@@ -566,7 +575,12 @@ const MOCHI = {
   peach: ['Peach', mochiSVG({ body: '#ffb8c4', mouth: 'w' })],
 };
 const mochiURI = k => 'data:image/svg+xml,' + encodeURIComponent(MOCHI[k][1]);
-for (const k of ['happy', 'love', 'sleepy', 'joy']) root.style.setProperty(`--mochi-${k}`, `url("${mochiURI(k)}")`);
+const DECOR = ['happy', 'love', 'sleepy', 'joy'];
+// Kawaii themes' decorations (logo, hero, empty pages, bookmark). Gio uses your own stickers when you have some.
+function applyDecor() {
+  const mine = prefs.theme === 'gio' ? [...myStickers.values()] : [];
+  DECOR.forEach((k, i) => root.style.setProperty(`--mochi-${k}`, `url("${mine.length ? mine[[0, 16, 12, 22][i] % mine.length] : mochiURI(k)}")`));
+}
 // Stickers are stored as an emoji, or "svg:<name>" for the Mochi pack.
 // "img:<id>" = one of your own imported stickers (kept in this browser; other readers see ✨ instead).
 let myStickers = new Map(); // id -> PNG data URL
@@ -578,7 +592,7 @@ function stickerHTML(s, cls = 'stk') {
 }
 
 // ---- Preferences (per-browser convenience; falls back to defaults) ----
-const THEMES = [['mochi', 'Mochi'], ['paper', 'Paper'], ['sepia', 'Sepia'], ['sage', 'Sage'], ['dusk', 'Dusk'], ['midnight', 'Midnight'], ['black', 'Black']];
+const THEMES = [['mochi', 'Mochi'], ['gio', 'Gio Theme'], ['paper', 'Paper'], ['sepia', 'Sepia'], ['sage', 'Sage'], ['dusk', 'Dusk'], ['midnight', 'Midnight'], ['black', 'Black']];
 let prefs = { theme: 'mochi', size: 110, font: 'Literata', spread: 'one',
   lh: 1.7, margin: 'normal', palette: 'on', hl: '' };
 try { Object.assign(prefs, JSON.parse(localStorage.getItem('bookshelf-prefs')) || {}); } catch {}
@@ -629,6 +643,8 @@ function applyPrefs() {
   const custom = prefs.custom.find(t => t.id === prefs.theme);
   if (!custom && !THEMES.some(([id]) => id === prefs.theme)) prefs.theme = 'paper';
   root.dataset.theme = custom ? 'custom' : prefs.theme;
+  root.classList.toggle('kawaii', prefs.theme === 'mochi' || prefs.theme === 'gio');
+  applyDecor();
   setThemeVars(custom);
   $('editTheme').hidden = !custom;
   document.body.dataset.spread = prefs.spread;
@@ -646,6 +662,7 @@ $('swatches').onclick = e => {
   const b = e.target.closest('.swatch'); if (!b) return;
   if (b.id === 'newTheme') return openThemeEditor(null);
   prefs.theme = b.dataset.themeId; applyPrefs();
+  if (prefs.theme === 'gio' && !myStickers.size) toast('Tip: add your sticker sheet in Aa → My stickers to decorate Gio Theme');
 };
 $('editTheme').onclick = () => openThemeEditor(prefs.custom.find(t => t.id === prefs.theme));
 
@@ -1111,10 +1128,17 @@ $('paletteItems').addEventListener('contextmenu', async e => {
 async function loadMyStickers() {
   myStickers = new Map((await all('stickers')).sort((a, b) => a.created - b.created).map(s => [s.id, s.src]));
   renderPalette();
+  applyDecor();
   redrawMarks();
 }
 const loadImage = f => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('not an image')); i.src = URL.createObjectURL(f); });
 
+function scaledCopy(img) {
+  const k = Math.min(1, 160 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+  c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL('image/png');
+}
 // Finds separate stickers on a plain background (the corner colour) by flood-filling connected non-background areas.
 function cutStickers(img) {
   const S = Math.min(1, 900 / Math.max(img.width, img.height)), w = Math.round(img.width * S), h = Math.round(img.height * S);
@@ -1122,7 +1146,8 @@ function cutStickers(img) {
   const ctx = cv.getContext('2d', { willReadFrequently: true });
   ctx.drawImage(img, 0, 0, w, h);
   const d = ctx.getImageData(0, 0, w, h).data, bg = [d[0], d[1], d[2]];
-  const isBg = p => d[p * 4 + 3] < 20 || Math.abs(d[p * 4] - bg[0]) + Math.abs(d[p * 4 + 1] - bg[1]) + Math.abs(d[p * 4 + 2] - bg[2]) < 30;
+  if (d[3] < 20) return [scaledCopy(img)]; // transparent corner: already a cut-out sticker, keep it whole
+  const isBg =p => d[p * 4 + 3] < 20 || Math.abs(d[p * 4] - bg[0]) + Math.abs(d[p * 4 + 1] - bg[1]) + Math.abs(d[p * 4 + 2] - bg[2]) < 30;
   const seen = new Uint8Array(w * h), boxes = [];
   for (let start = 0; start < w * h; start++) {
     if (seen[start] || isBg(start)) continue;
@@ -1321,10 +1346,11 @@ async function renderQuotes() {
     .filter(q => (!chosen || q.bookTitle === chosen) && (!term || (q.text + ' ' + q.note + ' ' + q.bookTitle).toLowerCase().includes(term)))
     .sort((a, b) => b.created - a.created);
   $('quoteCount').textContent = items.length ? `${allQs.length} quote${allQs.length === 1 ? '' : 's'} · ${notes.length} note${notes.length === 1 ? '' : 's'}` : '';
-  $('quoteList').innerHTML = shown.length ? shown.map(q => {
+  const cardStk = prefs.theme === 'gio' ? [...myStickers.values()] : []; // Gio: a different sticker on each card
+  $('quoteList').innerHTML = shown.length ? shown.map((q, i) => {
     const b = byId.get(q.bookId), isNote = q.store === 'marks';
     return `
-    <article class="quote${isNote ? ' is-note' : ''}" style="--qc:${esc(q.color || (isNote ? 'var(--accent)' : 'var(--hl)'))}">
+    <article class="quote${isNote ? ' is-note' : ''}" style="--qc:${esc(q.color || (isNote ? 'var(--accent)' : 'var(--hl)'))}${cardStk.length ? `;--qs:url('${cardStk[i % cardStk.length]}')` : ''}">
       ${isNote ? `<div class="kind">Note on “${esc(q.word)}”</div>` : ''}
       <p>${esc(q.text)}</p>
       ${q.note ? `<div class="note">${esc(q.note)}</div>` : ''}
