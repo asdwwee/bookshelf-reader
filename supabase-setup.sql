@@ -233,6 +233,20 @@ drop policy if exists "owner deletes club book" on storage.objects;
 create policy "owner deletes club book" on storage.objects for delete to authenticated
   using (bucket_id = 'club-books' and public.is_owner(public.club_of_path(name)));
 
+-- ---------- Share links: shared-books/<user id>/<random id>.epub (public download by exact link, no listing) ----------
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('shared-books', 'shared-books', true, 52428800, array['application/epub+zip', 'application/octet-stream'])
+on conflict (id) do update set public = true;
+drop policy if exists "upload own shared books" on storage.objects;
+create policy "upload own shared books" on storage.objects for insert to authenticated
+  with check (bucket_id = 'shared-books' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "see own shared books" on storage.objects;
+create policy "see own shared books" on storage.objects for select to authenticated
+  using (bucket_id = 'shared-books' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "remove own shared books" on storage.objects;
+create policy "remove own shared books" on storage.objects for delete to authenticated
+  using (bucket_id = 'shared-books' and (storage.foldername(name))[1] = auth.uid()::text);
+
 -- ---------- Your first (admin) invite ----------
 -- Made only while no admin exists yet. The query result at the bottom shows the code:
 -- use it on the Clubs tab -> "Create an account".
