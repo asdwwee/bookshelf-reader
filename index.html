@@ -312,6 +312,30 @@ body[data-margin="wide"] { --page-w: 600px; }
 .pm { position: absolute; top: 50%; width: 3px; height: 16px; margin-top: -8px; border-radius: 2px; background: var(--text); opacity: .45; transform: translateX(-1px); pointer-events: none; }
 @media (max-width: 560px) { .tab { padding: 6px 8px; } }
 
+/* ---- Reading lists, book menu, list dialog ---- */
+.list-bar { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 22px; }
+.list-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface); cursor: pointer; font-weight: 500; transition: transform .12s; }
+.list-chip .n { color: var(--muted); font-size: 12px; }
+.list-chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent, #fff); border-color: var(--accent); }
+.list-chip[aria-pressed="true"] .n { color: inherit; opacity: .8; }
+.list-chip.over { outline: 3px dashed var(--accent); outline-offset: 2px; transform: scale(1.08); }
+.list-chip.new { border-style: dashed; color: var(--muted); }
+.card[draggable="true"] { cursor: grab; }
+#bookMenu { position: fixed; z-index: 80; min-width: 230px; max-width: calc(100vw - 16px); background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow), 0 16px 40px rgba(0,0,0,.18); padding: 8px; }
+#bookMenu[hidden] { display: none; }
+.menu-title { font-weight: 600; padding: 4px 8px 6px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu-h { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 4px 8px; }
+.menu-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: 0; padding: 8px; border-radius: 8px; cursor: pointer; }
+.menu-item:hover { background: var(--accent-soft); }
+.menu-item.danger { color: #c0392b; }
+#bookMenu hr { border: 0; border-top: 1px solid var(--border); margin: 6px 0; }
+.dlg { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--text); padding: 20px; width: min(420px, calc(100vw - 32px)); box-shadow: var(--shadow), 0 24px 60px rgba(0,0,0,.3); }
+.dlg::backdrop { background: rgba(0,0,0,.18); }
+.dlg h3 { margin: 0 0 12px; font: 600 20px Literata, Georgia, serif; }
+.emoji-pick { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.emoji-pick button { width: 40px; height: 40px; border-radius: 10px; border: 2px solid var(--border); background: var(--bg); font-size: 19px; cursor: pointer; }
+.emoji-pick button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+
 #toast { position: fixed; bottom: 70px; left: 50%; transform: translate(-50%, 20px); background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 20px; font-size: 14px; opacity: 0; transition: .25s; pointer-events: none; z-index: 60; }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 </style>
@@ -348,9 +372,11 @@ body[data-margin="wide"] { --page-w: 600px; }
   <section id="library" class="active">
     <div id="hero"></div>
     <div class="section-head">
-      <h2 class="section-title">Your library</h2><span class="count" id="bookCount"></span><span class="spacer"></span>
+      <h2 class="section-title" id="libTitle">Your library</h2><span class="count" id="bookCount"></span><span class="spacer"></span>
+      <span id="listActions" style="display:flex;gap:8px"></span>
       <button class="btn" id="addBtn">+ Add books</button>
     </div>
+    <div class="list-bar" id="listBar" aria-label="Reading lists"></div>
     <ul class="grid" id="books"></ul>
     <input id="file" type="file" accept=".epub,application/epub+zip" multiple hidden>
   </section>
@@ -399,6 +425,17 @@ body[data-margin="wide"] { --page-w: 600px; }
 <div id="dropOverlay"><div>Drop to add to your library</div></div>
 <div id="toast" role="status"></div>
 <div id="bookmark" role="status" aria-live="polite"><div class="ribbon" aria-hidden="true">♥</div><div class="bm-text"><b>Saved your place</b><small id="bmWhere"></small></div></div>
+
+<div id="bookMenu" role="menu" hidden></div>
+
+<dialog id="listDialog" class="dlg" aria-labelledby="ldTitle">
+  <form method="dialog" id="listForm">
+    <h3 id="ldTitle">New list</h3>
+    <label class="field">Name <input id="ldName" maxlength="40" placeholder="Want to read" required></label>
+    <div class="emoji-pick" id="ldEmoji" role="group" aria-label="List icon"></div>
+    <div class="dialog-row"><span class="spacer"></span><button type="button" class="btn secondary" id="ldCancel">Cancel</button><button class="btn">Save</button></div>
+  </form>
+</dialog>
 
 <dialog id="markDialog" aria-labelledby="mdTitle">
   <form method="dialog" id="markForm">
@@ -664,26 +701,66 @@ async function parseEpub(data) {
   return { title: meta.title || '', author: meta.creator || '', cover };
 }
 
-async function addFiles(files) {
-  let added = 0;
+async function addFiles(files, listId) {
+  listId = listId || (document.body.dataset.view === 'library' && activeList); // viewing a list: new books join it, so they show up
+  const ids = [];
   for (const f of files) {
     if (!/\.epub$/i.test(f.name)) { toast(`${f.name} is not an .epub file`); continue; }
     try {
       toast(`Adding ${f.name}…`);
       const data = await f.arrayBuffer();
-      const meta = await parseEpub(data);
-      await put('books', { id: crypto.randomUUID(), title: meta.title || f.name.replace(/\.epub$/i, ''), author: meta.author,
+      const meta = await parseEpub(data), id = crypto.randomUUID();
+      await put('books', { id, title: meta.title || f.name.replace(/\.epub$/i, ''), author: meta.author,
         data, cover: meta.cover, cfi: null, pct: 0, locations: null, added: Date.now() });
-      added++;
+      ids.push(id);
     } catch (err) { toast(`Could not add ${f.name}: ${err && err.message || err}`); console.error(err); }
   }
-  if (added) toast(`Added ${added} book${added > 1 ? 's' : ''}`);
+  const l = listId && ids.length ? await addToList(listId, ids) : null;
+  if (ids.length) toast(`Added ${ids.length} book${ids.length > 1 ? 's' : ''}${l ? ` to ${l.emoji} ${l.name}` : ''}`);
   show('library');
 }
 
+// ---- Reading lists (kept in this browser): drag a book onto a list chip, or use ⋯ on a book ----
+let activeList = null;
+const LIST_EMOJI = ['🌱', '📚', '💖', '⭐', '🍓', '🌙', '☕', '🔥', '🎀', '🐻'];
+async function getLists() {
+  let lists = await all('lists');
+  if (!lists.length && !prefs.listsMade) { // first visit: start with one list
+    const l = { id: crypto.randomUUID(), name: 'Want to read', emoji: '🌱', bookIds: [], created: Date.now() };
+    await put('lists', l);
+    lists = [l];
+  }
+  prefs.listsMade = true; savePrefs();
+  return lists.sort((a, b) => a.created - b.created);
+}
+async function addToList(listId, ids) {
+  const l = await get('lists', listId);
+  if (!l) return null;
+  for (const id of ids) if (!l.bookIds.includes(id)) l.bookIds.push(id);
+  await put('lists', l);
+  return l;
+}
+async function removeBook(id) {
+  for (const q of (await all('quotes')).filter(q => q.bookId === id)) await del('quotes', q.id);
+  for (const m of (await all('marks')).filter(m => m.bookId === id)) await del('marks', m.id);
+  for (const l of (await all('lists')).filter(l => l.bookIds.includes(id))) { l.bookIds = l.bookIds.filter(x => x !== id); await put('lists', l); }
+  await del('books', id);
+  if (current && current.id === id) closeBook();
+}
+
 async function renderLibrary() {
-  const books = (await all('books')).filter(b => !b.clubId).sort((a, b) => (b.opened || b.added) - (a.opened || a.added)); // club copies live under Clubs
-  const last = books.find(b => b.opened && b.pct < 1);
+  const lists = await getLists();
+  const list = lists.find(l => l.id === activeList) || null;
+  if (!list) activeList = null;
+  const allBooks = (await all('books')).filter(b => !b.clubId).sort((a, b) => (b.opened || b.added) - (a.opened || a.added)); // club copies live under Clubs
+  const books = list ? list.bookIds.map(id => allBooks.find(b => b.id === id)).filter(Boolean) : allBooks;
+  $('listBar').innerHTML =
+    `<button class="list-chip" data-list="" aria-pressed="${!list}">📚 All books <span class="n">${allBooks.length}</span></button>` +
+    lists.map(l => `<button class="list-chip" data-list="${l.id}" aria-pressed="${l === list}" title="Drop books here">${esc(l.emoji)} ${esc(l.name)} <span class="n">${l.bookIds.filter(id => allBooks.some(b => b.id === id)).length}</span></button>`).join('') +
+    `<button class="list-chip new" id="newList">+ New list</button>`;
+  $('libTitle').textContent = list ? `${list.emoji} ${list.name}` : 'Your library';
+  $('listActions').innerHTML = list ? '<button class="btn secondary" id="renameList">Rename</button><button class="btn danger" id="deleteList">Delete list</button>' : '';
+  const last = !list && allBooks.find(b => b.opened && b.pct < 1);
   $('hero').innerHTML = last ? `
     <div class="hero">
       ${coverHTML(last, true)}
@@ -698,27 +775,96 @@ async function renderLibrary() {
     </div>` : '';
   $('bookCount').textContent = books.length ? `${books.length} book${books.length > 1 ? 's' : ''}` : '';
   $('books').innerHTML = books.length ? books.map(b => `
-    <li class="card">
+    <li class="card" draggable="true" data-book="${b.id}">
       <button class="open" data-open="${b.id}" aria-label="Read ${esc(b.title)}">${coverHTML(b, true)}</button>
       <div class="card-title">${esc(b.title)}</div>
       <div class="card-author">${esc(b.author) || '&nbsp;'}</div>
       <div class="mini"><div class="bar"><div style="width:${b.pct * 100}%"></div></div><span>${b.pct >= 1 ? 'Done' : Math.round(b.pct * 100) + '%'}</span></div>
-      <button class="remove" data-del="${b.id}" aria-label="Remove ${esc(b.title)}">×</button>
+      <button class="remove" data-menu="${b.id}" aria-label="Options for ${esc(b.title)}" aria-haspopup="menu">⋯</button>
     </li>`).join('')
+    : list ? `<li style="grid-column:1/-1"><div class="dropzone"><b>This list is empty</b>Drag books from “All books” onto the ${esc(list.emoji)} chip above, use ⋯ on a book, or drop .epub files on the chip</div></li>`
     : `<li style="grid-column:1/-1"><div class="dropzone" role="button" tabindex="0" id="dropzone"><b>Your shelf is empty</b>Drop .epub files anywhere on this page, or click to choose</div></li>`;
   const dz = $('dropzone');
   if (dz) { dz.onclick = () => fileInput.click(); dz.onkeydown = e => (e.key === 'Enter' || e.key === ' ') && fileInput.click(); }
 }
 $('library').onclick = async e => {
-  const open = e.target.closest('[data-open]'), rm = e.target.closest('[data-del]');
-  if (open) openBook(open.dataset.open);
-  if (rm && confirm('Remove this book and its quotes and notes?')) {
-    for (const q of (await all('quotes')).filter(q => q.bookId === rm.dataset.del)) await del('quotes', q.id);
-    for (const m of (await all('marks')).filter(m => m.bookId === rm.dataset.del)) await del('marks', m.id);
-    await del('books', rm.dataset.del);
-    if (current && current.id === rm.dataset.del) closeBook();
-    renderLibrary();
+  const open = e.target.closest('[data-open]'), menu = e.target.closest('[data-menu]'), chip = e.target.closest('[data-list]');
+  if (menu) { e.stopPropagation(); return openBookMenu(menu.dataset.menu, menu); }
+  if (open) return openBook(open.dataset.open);
+  if (chip) { activeList = chip.dataset.list || null; return renderLibrary(); }
+  if (e.target.id === 'newList') return openListDialog(null);
+  if (e.target.id === 'renameList') return openListDialog(await get('lists', activeList));
+  if (e.target.id === 'deleteList') {
+    const l = await get('lists', activeList);
+    if (l && confirm(`Delete the list “${l.name}”? The books stay in your library.`)) { await del('lists', l.id); activeList = null; renderLibrary(); }
   }
+};
+// Drag a book card (or .epub files) onto a list chip.
+$('books').addEventListener('dragstart', e => {
+  const card = e.target.closest('[data-book]'); if (!card) return;
+  e.dataTransfer.setData('text/x-book', card.dataset.book);
+  e.dataTransfer.effectAllowed = 'copy';
+});
+const chipFor = e => { const c = e.target.closest && e.target.closest('.list-chip[data-list]'); return c && c.dataset.list ? c : null; };
+$('listBar').addEventListener('dragover', e => {
+  const c = chipFor(e), t = [...e.dataTransfer.types];
+  if (c && (t.includes('text/x-book') || t.includes('Files'))) { e.preventDefault(); c.classList.add('over'); }
+});
+$('listBar').addEventListener('dragleave', e => { const c = chipFor(e); if (c) c.classList.remove('over'); });
+$('listBar').addEventListener('drop', async e => {
+  const c = chipFor(e); if (!c) return;
+  e.preventDefault(); e.stopPropagation();
+  c.classList.remove('over'); dragDepth = 0; document.body.classList.remove('dragging');
+  const bookId = e.dataTransfer.getData('text/x-book');
+  if (bookId) { const l = await addToList(c.dataset.list, [bookId]); if (l) toast(`Added to ${l.emoji} ${l.name}`); renderLibrary(); }
+  else if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files, c.dataset.list);
+});
+
+// ---- Book menu (⋯): lists, share link, remove ----
+async function openBookMenu(id, anchor) {
+  const [b, lists] = [await get('books', id), await getLists()];
+  const m = $('bookMenu');
+  m.innerHTML = `<div class="menu-title">${esc(b.title)}</div><div class="menu-h">Lists</div>
+    ${lists.map(l => `<label class="menu-item"><input type="checkbox" data-inlist="${l.id}" ${l.bookIds.includes(id) ? 'checked' : ''}> ${esc(l.emoji)} ${esc(l.name)}</label>`).join('')}
+    <button class="menu-item" data-act="newlist">+ New list…</button><hr>
+    <button class="menu-item danger" data-act="remove">🗑 Remove from library</button>`;
+  m.hidden = false;
+  const r = anchor.getBoundingClientRect();
+  m.style.left = Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8)) + 'px';
+  m.style.top = Math.max(8, Math.min(r.bottom + 6, innerHeight - m.offsetHeight - 8)) + 'px';
+  m.onchange = async e => {
+    const l = await get('lists', e.target.dataset.inlist); if (!l) return;
+    l.bookIds = e.target.checked ? [...new Set([...l.bookIds, id])] : l.bookIds.filter(x => x !== id);
+    await put('lists', l); renderLibrary();
+  };
+  m.onclick = async e => {
+    const act = e.target.closest('[data-act]'); if (!act) return;
+    m.hidden = true;
+    if (act.dataset.act === 'newlist') openListDialog(null, id);
+    if (act.dataset.act === 'remove' && confirm(`Remove “${b.title}” and its quotes and notes?`)) { await removeBook(id); renderLibrary(); }
+  };
+}
+document.addEventListener('click', e => { if (!e.target.closest('#bookMenu')) $('bookMenu').hidden = true; });
+
+// ---- New / rename list dialog ----
+let editingList = null, listAddBook = null, listEmoji = LIST_EMOJI[0];
+function openListDialog(l, addBookId) {
+  editingList = l; listAddBook = addBookId || null; listEmoji = l ? l.emoji : LIST_EMOJI[0];
+  $('ldTitle').textContent = l ? 'Rename list' : 'New list';
+  $('ldName').value = l ? l.name : '';
+  $('ldEmoji').innerHTML = LIST_EMOJI.map(x => `<button type="button" data-emoji="${x}" aria-pressed="${x === listEmoji}" aria-label="Use ${x}">${x}</button>`).join('');
+  $('listDialog').showModal();
+}
+$('ldEmoji').onclick = e => { const b = e.target.closest('button'); if (!b) return; listEmoji = b.dataset.emoji; $('ldEmoji').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); };
+$('ldCancel').onclick = () => $('listDialog').close();
+$('listForm').onsubmit = async () => {
+  const l = editingList || { id: crypto.randomUUID(), bookIds: [], created: Date.now() };
+  l.name = $('ldName').value.trim() || 'My list';
+  l.emoji = listEmoji;
+  if (listAddBook && !l.bookIds.includes(listAddBook)) l.bookIds.push(listAddBook);
+  await put('lists', l);
+  toast(`${l.emoji} ${l.name} saved`);
+  renderLibrary();
 };
 
 // ---- Reader ----
