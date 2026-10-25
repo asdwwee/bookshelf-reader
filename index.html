@@ -370,6 +370,11 @@ body[data-margin="wide"] { --page-w: 600px; }
 .kawaii .empty::before, .kawaii .dropzone::before { content: ""; display: block; width: 72px; height: 72px; margin: 0 auto 8px; background: var(--mochi-sleepy) center / contain no-repeat; }
 .kawaii .ribbon-mark::after, .kawaii #bookmark .ribbon { font-size: 0; }
 .kawaii #bookmark .ribbon::before { content: ""; width: 30px; height: 30px; background: var(--mochi-joy) center / contain no-repeat; }
+.pack-row { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-top: 1px solid var(--border); }
+.pack-row:first-child { border-top: 0; }
+.pack-row img { width: 30px; height: 30px; object-fit: contain; }
+.pack-row .pack-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.pack-row .link-btn { padding: 0 2px; }
 .stk { display: inline-block; width: 1.6em; height: 1.6em; vertical-align: middle; }
 #palette .stk { width: 30px; height: 30px; }
 
@@ -402,9 +407,10 @@ body[data-margin="wide"] { --page-w: 600px; }
       <button data-v="narrow">Narrow</button><button data-v="normal">Normal</button><button data-v="wide">Wide</button></div></div>
     <div class="group"><h4>Annotation tools</h4><div class="seg" id="paletteSeg">
       <button data-v="on">Show</button><button data-v="off">Hide</button></div></div>
-    <div class="group"><h4>My stickers</h4>
-      <div class="stepper"><output id="myStkOut" style="text-align:left">0 stickers</output><button id="addStk" style="width:auto;padding:0 12px">Add</button><button id="clearStk" style="width:auto;padding:0 12px">Clear</button></div>
-      <p class="muted" style="margin:6px 0 0">Add images or a whole sticker sheet; it's cut into separate stickers. Kept in this browser.</p></div>
+    <div class="group"><h4>My sticker packs</h4>
+      <div id="packList"></div>
+      <div style="display:flex;gap:8px;margin-top:8px"><button class="btn secondary" id="addStk">+ Add pack</button><button class="btn secondary" id="clearStk">Clear all</button></div>
+      <p class="muted" style="margin:6px 0 0">Add images or a whole sticker sheet; it's cut into stickers. “Make theme” turns a pack into a theme. Kept in this browser.</p></div>
   </div>
 </header>
 
@@ -469,6 +475,14 @@ body[data-margin="wide"] { --page-w: 600px; }
 <div id="bookMenu" role="menu" hidden></div>
 <input id="stickerFile" type="file" accept="image/*" multiple hidden>
 
+<dialog id="packDialog" class="dlg" aria-labelledby="pkTitle">
+  <form method="dialog" id="packForm">
+    <h3 id="pkTitle">Name this sticker pack</h3>
+    <label class="field">Name <input id="pkName" maxlength="30" required></label>
+    <div class="dialog-row"><span class="spacer"></span><button type="button" class="btn secondary" id="pkCancel">Cancel</button><button class="btn">Save</button></div>
+  </form>
+</dialog>
+
 <dialog id="listDialog" class="dlg" aria-labelledby="ldTitle">
   <form method="dialog" id="listForm">
     <h3 id="ldTitle">New list</h3>
@@ -506,6 +520,7 @@ body[data-margin="wide"] { --page-w: 600px; }
     </div>
     <label class="field">Name <input id="tName" required maxlength="24"></label>
     <label class="field">Start from <select id="tBase"></select></label>
+    <label class="field">Sticker pack (decorates the theme and fills the palette) <select id="tPack"></select></label>
     <div class="colors" id="tColors"></div>
     <div class="dialog-row">
       <button type="button" class="btn danger" id="tDelete">Delete</button><span class="spacer"></span>
@@ -577,13 +592,22 @@ const MOCHI = {
 const mochiURI = k => 'data:image/svg+xml,' + encodeURIComponent(MOCHI[k][1]);
 const DECOR = ['happy', 'love', 'sleepy', 'joy'];
 // Kawaii themes' decorations (logo, hero, empty pages, bookmark). Gio uses your own stickers when you have some.
-function applyDecor() {
-  const mine = prefs.theme === 'gio' ? [...myStickers.values()] : [];
+function applyDecor(pack = themePack()) {
+  const mine = pack ? packStickers(pack).map(id => myStickers.get(id)) : [];
   DECOR.forEach((k, i) => root.style.setProperty(`--mochi-${k}`, `url("${mine.length ? mine[[0, 16, 12, 22][i] % mine.length] : mochiURI(k)}")`));
 }
 // Stickers are stored as an emoji, or "svg:<name>" for the Mochi pack.
 // "img:<id>" = one of your own imported stickers (kept in this browser; other readers see ✨ instead).
 let myStickers = new Map(); // id -> PNG data URL
+let stickerPack = new Map(); // id -> pack name
+const packNames = () => [...new Set(stickerPack.values())];
+const packStickers = p => [...myStickers.keys()].filter(id => stickerPack.get(id) === p);
+// The pack decorating the current theme: a custom theme's own pack, or your first pack for Gio Theme.
+function themePack() {
+  const c = prefs.custom.find(t => t.id === prefs.theme);
+  if (c) return c.pack && packNames().includes(c.pack) ? c.pack : null;
+  return prefs.theme === 'gio' ? packNames()[0] || null : null;
+}
 const stickerName = s => !s ? '' : s.startsWith('svg:') && MOCHI[s.slice(4)] ? MOCHI[s.slice(4)][0] + ' mochi' : s.startsWith('img:') ? 'Sticker' : s;
 function stickerHTML(s, cls = 'stk') {
   if (s && s.startsWith('svg:') && MOCHI[s.slice(4)]) return `<img class="${cls}" src="${mochiURI(s.slice(4))}" alt="${MOCHI[s.slice(4)][0]} sticker">`;
@@ -634,7 +658,11 @@ const swatchFace = '<i style="background:var(--page);color:var(--page-text);bord
 function renderSwatches() {
   $('swatches').innerHTML =
     THEMES.map(([id, name]) => `<button class="swatch" data-theme-id="${id}" data-theme="${id}" style="background:var(--surface);color:var(--text)">${swatchFace}${name}</button>`).join('') +
-    prefs.custom.map(t => `<button class="swatch" data-theme-id="${t.id}" style="${varStyle(t)};background:var(--surface);color:var(--text)">${swatchFace}${esc(t.name)}</button>`).join('') +
+    prefs.custom.map(t => {
+      const ids = t.pack ? packStickers(t.pack) : [];
+      const face = ids.length ? `<i style="background:var(--page);border:1px solid var(--border)"><img src="${myStickers.get(ids[0])}" alt="" style="height:20px;vertical-align:middle"></i>` : swatchFace;
+      return `<button class="swatch" data-theme-id="${t.id}" style="${varStyle(t)};background:var(--surface);color:var(--text)">${face}${esc(t.name)}</button>`;
+    }).join('') +
     `<button class="swatch new" id="newTheme" aria-label="Create a new theme"><i>+</i>Create</button>`;
 }
 renderSwatches();
@@ -643,9 +671,10 @@ function applyPrefs() {
   const custom = prefs.custom.find(t => t.id === prefs.theme);
   if (!custom && !THEMES.some(([id]) => id === prefs.theme)) prefs.theme = 'paper';
   root.dataset.theme = custom ? 'custom' : prefs.theme;
-  root.classList.toggle('kawaii', prefs.theme === 'mochi' || prefs.theme === 'gio');
+  root.classList.toggle('kawaii', prefs.theme === 'mochi' || prefs.theme === 'gio' || !!(custom && custom.pack));
   applyDecor();
   setThemeVars(custom);
+  if (typeof renderPalette === 'function' && $('paletteItems').childElementCount) renderPalette(); // palette follows the theme's pack
   $('editTheme').hidden = !custom;
   document.body.dataset.spread = prefs.spread;
   document.body.dataset.margin = prefs.margin;
@@ -671,6 +700,8 @@ let editing = null;
 function previewTheme() {
   root.dataset.theme = 'custom';
   setThemeVars(editing);
+  root.classList.toggle('kawaii', !!editing.pack);
+  applyDecor(editing.pack || null);
   styleBook();
 }
 function renderColorInputs() {
@@ -686,6 +717,7 @@ function openThemeEditor(t) {
     [...THEMES, ...prefs.custom.filter(c => !t || c.id !== t.id).map(c => [c.id, c.name])]
       .map(([id, name]) => `<option value="${id}" ${!t && id === base ? 'selected' : ''}>${esc(name)}</option>`).join('');
   $('tDelete').hidden = !t;
+  $('tPack').innerHTML = '<option value="">None</option>' + packNames().map(p => `<option ${p === editing.pack ? 'selected' : ''}>${esc(p)}</option>`).join('');
   renderColorInputs();
   $('settings').classList.remove('open');
   $('themeDialog').showModal();
@@ -698,6 +730,7 @@ $('tColors').oninput = e => {
   e.target.parentElement.querySelector('code').textContent = e.target.value;
   previewTheme();
 };
+$('tPack').onchange = () => { editing.pack = $('tPack').value || null; previewTheme(); };
 $('tCancel').onclick = () => $('themeDialog').close();
 $('themeForm').onsubmit = () => {
   editing.name = $('tName').value.trim() || 'My theme';
@@ -1076,16 +1109,16 @@ function addHighlight(cfi, color) {
 
 // ---- Annotations: notes + stickers dragged from the palette (or tap, then tap the text) ----
 const EMOJI_STICKERS = ['⭐', '❤️', '💡', '❓', '🔥', '😂', '📌'];
-// Once you've imported your own stickers, the palette shows only those (no Mochi pack, no emoji).
+// With your own stickers the palette shows only those (no Mochi pack, no emoji); a pack theme shows just its pack.
 function renderPalette() {
-  const mine = [...myStickers.keys()].map(id => 'img:' + id);
+  const p = themePack();
+  const mine = (p ? packStickers(p) : [...myStickers.keys()]).map(id => 'img:' + id);
   const list = mine.length ? mine : [...Object.keys(MOCHI).map(k => 'svg:' + k), ...EMOJI_STICKERS];
   $('paletteItems').innerHTML =
     `<button data-act="addstk" aria-label="Add your own stickers" title="Add your own stickers (images or a whole sticker sheet)">➕</button>` +
     `<button draggable="true" data-kind="note" data-emoji="📝" aria-label="Note" title="Note: drag onto the page">📝</button>` +
     list.map(s => `<button draggable="true" data-kind="sticker" data-emoji="${s}" aria-label="${esc(stickerName(s))} sticker"
       title="${s.startsWith('img:') ? 'Drag onto the page · right-click to remove' : 'Sticker: drag onto the page'}">${stickerHTML(s)}</button>`).join('');
-  $('myStkOut').textContent = `${mine.length} sticker${mine.length === 1 ? '' : 's'}`;
 }
 let armed = null;
 if (matchMedia('(max-width: 560px)').matches) { $('palette').classList.add('closed'); $('paletteToggle').setAttribute('aria-expanded', false); } // phones: start tucked away
@@ -1126,10 +1159,72 @@ $('paletteItems').addEventListener('contextmenu', async e => {
   loadMyStickers();
 });
 async function loadMyStickers() {
-  myStickers = new Map((await all('stickers')).sort((a, b) => a.created - b.created).map(s => [s.id, s.src]));
+  const rows = (await all('stickers')).sort((a, b) => a.created - b.created);
+  // Stickers imported before packs existed: one pack per import (imports are minutes apart, a batch is seconds).
+  let n = new Set(rows.map(s => s.pack).filter(Boolean)).size, cur = null, last = 0;
+  for (const s of rows) {
+    if (!s.pack) {
+      if (!cur || s.created - last > 20000) cur = `Pack ${++n}`;
+      s.pack = cur;
+      await put('stickers', s);
+    }
+    last = s.created;
+  }
+  myStickers = new Map(rows.map(s => [s.id, s.src]));
+  stickerPack = new Map(rows.map(s => [s.id, s.pack]));
+  renderSwatches();
+  applyPrefs();
   renderPalette();
-  applyDecor();
+  renderPackList();
   redrawMarks();
+}
+
+// Packs: each import is a named pack; a pack can become a theme ("Make theme").
+function renderPackList() {
+  $('packList').innerHTML = packNames().map(p => {
+    const ids = packStickers(p);
+    return `<div class="pack-row"><img src="${myStickers.get(ids[0])}" alt=""><span class="pack-name">${esc(p)} <span class="muted">${ids.length}</span></span>
+      <button class="link-btn" data-packtheme="${esc(p)}" title="Make a theme decorated with this pack">Make theme</button>
+      <button class="link-btn" data-packrename="${esc(p)}" aria-label="Rename ${esc(p)}" title="Rename">✎</button>
+      <button class="link-btn" data-packdel="${esc(p)}" aria-label="Delete ${esc(p)}" title="Delete pack">✕</button></div>`;
+  }).join('') || '<p class="muted" style="margin:0">No sticker packs yet.</p>';
+}
+$('packList').onclick = async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  e.stopPropagation();
+  if (b.dataset.packtheme) {
+    const p = b.dataset.packtheme, gio = readTheme('gio');
+    const t = { id: 'c-' + Date.now().toString(36), name: p, ...gio, pack: p };
+    prefs.custom.push(t); prefs.theme = t.id;
+    renderSwatches(); applyPrefs(); renderPalette();
+    toast(`Theme “${p}” made and switched on`);
+  }
+  if (b.dataset.packrename) {
+    const old = b.dataset.packrename, name = await askText('Rename sticker pack', old);
+    if (!name || name === old) return;
+    for (const s of (await all('stickers')).filter(s => s.pack === old)) { s.pack = name; await put('stickers', s); }
+    prefs.custom.forEach(t => { if (t.pack === old) t.pack = name; });
+    savePrefs(); loadMyStickers();
+  }
+  if (b.dataset.packdel) {
+    const p = b.dataset.packdel;
+    if (!confirm(`Delete the sticker pack “${p}”? Stickers from it already placed in books show as ✨.`)) return;
+    for (const id of packStickers(p)) await del('stickers', id);
+    loadMyStickers();
+  }
+};
+function askText(title, value) {
+  return new Promise(res => {
+    const d = $('packDialog');
+    let ok = false;
+    $('pkTitle').textContent = title;
+    $('pkName').value = value;
+    $('packForm').onsubmit = () => { ok = true; };
+    $('pkCancel').onclick = () => d.close();
+    d.onclose = () => res(ok ? $('pkName').value.trim() : null);
+    d.showModal();
+    $('pkName').select();
+  });
 }
 const loadImage = f => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('not an image')); i.src = URL.createObjectURL(f); });
 
@@ -1179,16 +1274,19 @@ function cutStickers(img) {
   });
 }
 async function importStickers(files) {
+  if (!files.length) return;
+  const pack = await askText('Name this sticker pack', files.length === 1 ? files[0].name.replace(/\.[^.]+$/, '') : `Pack ${packNames().length + 1}`);
+  if (!pack) return;
   let n = 0;
   for (const f of files) {
     try {
       const img = await loadImage(f);
-      for (const src of cutStickers(img)) await put('stickers', { id: crypto.randomUUID(), src, created: Date.now() + n++ });
+      for (const src of cutStickers(img)) await put('stickers', { id: crypto.randomUUID(), src, pack, created: Date.now() + n++ });
       URL.revokeObjectURL(img.src);
     } catch { toast(`${f.name} isn't an image`); }
   }
   await loadMyStickers();
-  if (n) toast(`Added ${n} sticker${n === 1 ? '' : 's'} to your palette`);
+  if (n) toast(`Added ${n} sticker${n === 1 ? '' : 's'} as “${pack}”. Use “Make theme” in Aa → My stickers to turn it into a theme`);
 }
 $('stickerFile').onchange = () => { importStickers([...$('stickerFile').files]); $('stickerFile').value = ''; };
 $('addStk').onclick = () => $('stickerFile').click();
@@ -1346,7 +1444,7 @@ async function renderQuotes() {
     .filter(q => (!chosen || q.bookTitle === chosen) && (!term || (q.text + ' ' + q.note + ' ' + q.bookTitle).toLowerCase().includes(term)))
     .sort((a, b) => b.created - a.created);
   $('quoteCount').textContent = items.length ? `${allQs.length} quote${allQs.length === 1 ? '' : 's'} · ${notes.length} note${notes.length === 1 ? '' : 's'}` : '';
-  const cardStk = prefs.theme === 'gio' ? [...myStickers.values()] : []; // Gio: a different sticker on each card
+  const tp = themePack(), cardStk = tp ? packStickers(tp).map(id => myStickers.get(id)) : []; // pack themes: a different sticker on each card
   $('quoteList').innerHTML = shown.length ? shown.map((q, i) => {
     const b = byId.get(q.bookId), isNote = q.store === 'marks';
     return `
