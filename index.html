@@ -380,6 +380,16 @@ body[data-margin="wide"] { --page-w: 600px; }
 .has-icons .hero .btn::before { background-image: var(--ic-continue); }
 .has-icons #settingsBtn { font-size: 0; width: 42px; height: 38px; background: var(--ic-settings) center / 28px no-repeat, var(--surface); }
 @media (max-width: 560px) { .has-icons .tab { font-size: 0; gap: 0; padding: 4px 8px; } .has-icons .tab::before { width: 28px; height: 28px; } }
+.icon-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.icon-slot { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); cursor: pointer; font-size: 11px; color: var(--muted); }
+.icon-slot:hover { border-color: var(--accent); color: var(--text); }
+.icon-slot img, .icon-slot .ph { width: 30px; height: 30px; object-fit: contain; display: grid; place-items: center; }
+.ic-picker { max-height: 60vh; overflow: auto; }
+.ic-picker h4 { margin: 10px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.ic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
+.ic-grid button { border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); padding: 4px; cursor: pointer; aspect-ratio: 1; }
+.ic-grid button:hover { border-color: var(--accent); }
+.ic-grid img { width: 100%; height: 100%; object-fit: contain; }
 .pack-row { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-top: 1px solid var(--border); }
 .pack-row:first-child { border-top: 0; }
 .pack-row img { width: 30px; height: 30px; object-fit: contain; }
@@ -417,6 +427,8 @@ body[data-margin="wide"] { --page-w: 600px; }
       <button data-v="narrow">Narrow</button><button data-v="normal">Normal</button><button data-v="wide">Wide</button></div></div>
     <div class="group"><h4>Annotation tools</h4><div class="seg" id="paletteSeg">
       <button data-v="on">Show</button><button data-v="off">Hide</button></div></div>
+    <div class="group"><h4>Icons</h4><div class="icon-slots" id="iconSlots"></div>
+      <button class="link-btn" id="resetIcons">Reset icons for this theme</button></div>
     <div class="group"><h4>Background</h4>
       <div class="inline-form"><select id="bgSel" aria-label="Background pattern">
         <option value="auto">Theme default</option><option value="none">Plain</option><option value="dots">Polka dots</option>
@@ -490,6 +502,12 @@ body[data-margin="wide"] { --page-w: 600px; }
 
 <div id="bookMenu" role="menu" hidden></div>
 <input id="stickerFile" type="file" accept="image/*" multiple hidden>
+
+<dialog id="iconDialog" class="dlg" aria-labelledby="icTitle">
+  <h3 id="icTitle">Choose an icon</h3>
+  <div id="icGrid" class="ic-picker"></div>
+  <div class="dialog-row" style="margin-top:12px"><button class="btn secondary" id="icDefault">Use default</button><span class="spacer"></span><button class="btn secondary" id="icCancel">Cancel</button></div>
+</dialog>
 
 <dialog id="packDialog" class="dlg" aria-labelledby="pkTitle">
   <form method="dialog" id="packForm">
@@ -626,12 +644,42 @@ function applyDecor(pack = themePack()) {
   const mine = pack ? packStickers(pack).map(id => myStickers.get(id)) : [];
   const art = { happy: 'bunny', love: 'bunnylove', sleepy: 'bunnysleepy', joy: 'bunny' }; // without your stickers, the bunny critters decorate
   DECOR.forEach((k, i) => root.style.setProperty(`--mochi-${k}`, `url("${mine.length ? mine[[0, 16, 12, 22][i] % mine.length] : mochiURI(art[k] || k)}")`));
-  // Icons on the tabs and main buttons: the theme's stickers, or bunnies on the other cute themes.
-  const icons = mine.length ? mine : root.classList.contains('kawaii') ? ['bunny', 'bunnylove', 'bunnysleepy'].map(mochiURI) : [];
-  root.classList.toggle('has-icons', icons.length > 0);
-  ICON_SLOTS.forEach((slot, i) => icons.length ? root.style.setProperty(`--ic-${slot}`, `url("${icons[(i * 3 + 1) % icons.length]}")`) : root.style.removeProperty(`--ic-${slot}`));
+  // Icons on the tabs and main buttons: your picks for this theme (Aa → Icons), else the theme's stickers, else bunnies on cute themes.
+  const auto = mine.length ? mine : root.classList.contains('kawaii') ? ['bunny', 'bunnylove', 'bunnysleepy'].map(mochiURI) : [];
+  const picks = (prefs.icons && prefs.icons[prefs.theme]) || {};
+  currentIcons = Object.fromEntries(ICON_SLOTS.map(([slot], i) =>
+    [slot, myStickers.get(picks[slot]) || (auto.length ? auto[(i * 3 + 1) % auto.length] : null)]));
+  root.classList.toggle('has-icons', Object.values(currentIcons).some(Boolean));
+  for (const [slot, src] of Object.entries(currentIcons)) src ? root.style.setProperty(`--ic-${slot}`, `url("${src}")`) : root.style.removeProperty(`--ic-${slot}`);
+  renderIconSlots();
 }
-const ICON_SLOTS = ['library', 'reader', 'quotes', 'clubs', 'settings', 'add', 'continue'];
+const ICON_SLOTS = [['library', 'Library'], ['reader', 'Reader'], ['quotes', 'Quotes'], ['clubs', 'Clubs'], ['settings', 'Settings'], ['add', 'Add books'], ['continue', 'Continue']];
+let currentIcons = {}, pickingSlot = null;
+
+// Aa → Icons: click a slot, pick any of your stickers for it. Saved per theme.
+function renderIconSlots() {
+  const box = document.getElementById('iconSlots');
+  if (!box) return;
+  box.innerHTML = myStickers.size
+    ? ICON_SLOTS.map(([slot, label]) => `<button class="icon-slot" data-slot="${slot}" title="Choose the ${label} icon">
+        ${currentIcons[slot] ? `<img src="${currentIcons[slot]}" alt="">` : '<span class="ph">+</span>'}<span>${label}</span></button>`).join('')
+    : '<p class="muted" style="margin:0">Add a sticker pack (below) to choose icons.</p>';
+}
+function openIconPicker(slot) {
+  pickingSlot = slot;
+  $('icTitle').textContent = `Icon for ${ICON_SLOTS.find(s => s[0] === slot)[1]}`;
+  $('icGrid').innerHTML = packNames().map(p => `<h4>${esc(p)}</h4><div class="ic-grid">${packStickers(p).map(id =>
+    `<button data-pick="${id}" aria-label="Use this sticker"><img src="${myStickers.get(id)}" alt=""></button>`).join('')}</div>`).join('');
+  $('settings').classList.remove('open');
+  $('iconDialog').showModal();
+}
+function setIconPick(id) {
+  prefs.icons = prefs.icons || {};
+  const t = prefs.icons[prefs.theme] = prefs.icons[prefs.theme] || {};
+  if (id) t[pickingSlot] = id; else delete t[pickingSlot];
+  savePrefs(); applyDecor();
+  $('iconDialog').close();
+}
 // ---- Repeating page backgrounds: drawn patterns, or your own image tiled (kept in this browser) ----
 const tuft = (x, y) => `<g transform="translate(${x} ${y})"><ellipse rx="13" ry="6" fill="url(#g)"/>` +
   `<path d="M-5 2l-1.5-6M0 2V-5M5 2l1.5-6" stroke="#5b4636" stroke-width="1.8" stroke-linecap="round"/></g>`;
@@ -820,6 +868,11 @@ $('marginSeg').onclick = e => {
   prefs.margin = b.dataset.v; applyPrefs();
   if (rendition && rendition.manager) setTimeout(() => rendition.resize(), 50);
 };
+$('iconSlots').onclick = e => { const b = e.target.closest('[data-slot]'); if (b) { e.stopPropagation(); openIconPicker(b.dataset.slot); } };
+$('icGrid').onclick = e => { const b = e.target.closest('[data-pick]'); if (b) setIconPick(b.dataset.pick); };
+$('icDefault').onclick = () => setIconPick(null);
+$('icCancel').onclick = () => $('iconDialog').close();
+$('resetIcons').onclick = e => { e.stopPropagation(); if (prefs.icons) delete prefs.icons[prefs.theme]; savePrefs(); applyDecor(); toast('Icons reset for this theme'); };
 $('bgSel').onchange = () => {
   prefs.bg = $('bgSel').value;
   if (prefs.bg === 'mine' && !bgImage) $('bgFile').click();
@@ -1263,6 +1316,7 @@ function renderPackList() {
   $('packList').innerHTML = packNames().map(p => {
     const ids = packStickers(p);
     return `<div class="pack-row"><img src="${myStickers.get(ids[0])}" alt=""><span class="pack-name">${esc(p)} <span class="muted">${ids.length}</span></span>
+      <button class="link-btn" data-packicons="${esc(p)}" title="Use this pack for all icons in the current theme">Icons</button>
       <button class="link-btn" data-packtheme="${esc(p)}" title="Make a theme decorated with this pack">Make theme</button>
       <button class="link-btn" data-packrename="${esc(p)}" aria-label="Rename ${esc(p)}" title="Rename">✎</button>
       <button class="link-btn" data-packdel="${esc(p)}" aria-label="Delete ${esc(p)}" title="Delete pack">✕</button></div>`;
@@ -1271,6 +1325,13 @@ function renderPackList() {
 $('packList').onclick = async e => {
   const b = e.target.closest('button'); if (!b) return;
   e.stopPropagation();
+  if (b.dataset.packicons) { // fill every icon slot from this pack, spread across it so they're all different
+    const ids = packStickers(b.dataset.packicons), step = Math.max(1, Math.floor(ids.length / ICON_SLOTS.length));
+    prefs.icons = prefs.icons || {};
+    prefs.icons[prefs.theme] = Object.fromEntries(ICON_SLOTS.map(([slot], i) => [slot, ids[(i * step) % ids.length]]));
+    savePrefs(); applyDecor();
+    return toast(`Icons now use “${b.dataset.packicons}”. Click any icon above to change just that one`);
+  }
   if (b.dataset.packtheme) {
     const p = b.dataset.packtheme, existing = prefs.custom.find(t => t.pack === p);
     if (existing) { prefs.theme = existing.id; applyPrefs(); return toast(`Switched to your “${existing.name}” theme`); } // no duplicates
