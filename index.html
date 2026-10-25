@@ -890,7 +890,7 @@ $('bgFile').onchange = async () => {
     await put('assets', { id: 'bg', src: bgImage });
     prefs.bg = 'mine'; applyPrefs();
     toast('Background set: it repeats across the page');
-  } catch { toast(`${f.name} isn't an image`); }
+  } catch (e) { toast(`Couldn't use ${f.name}: ${e && e.message || e}`); console.error(e); }
 };
 get('assets', 'bg').then(a => { if (a) { bgImage = a.src; applyBackground(); } });
 $('paletteSeg').onclick =e => { const b = e.target.closest('button'); if (b) { prefs.palette = b.dataset.v; applyPrefs(); } };
@@ -1367,7 +1367,32 @@ function askText(title, value) {
     $('pkName').select();
   });
 }
-const loadImage = f => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('not an image')); i.src = URL.createObjectURL(f); });
+// What the file really is, from its first bytes (a ".jpg" name can hide an iPhone HEIC, AVIF or WebP).
+async function realImageType(f) {
+  const b = new Uint8Array(await f.slice(0, 32).arrayBuffer()), s = String.fromCharCode(...b);
+  if (b[0] === 0xff && b[1] === 0xd8) return 'JPEG';
+  if (s.startsWith('\x89PNG')) return 'PNG';
+  if (s.startsWith('GIF8')) return 'GIF';
+  if (s.startsWith('RIFF') && s.includes('WEBP')) return 'WebP';
+  if (/ftyp(heic|heix|hevc|mif1|msf1)/.test(s)) return 'HEIC';
+  if (/ftypavi[fs]/.test(s)) return 'AVIF';
+  if (/<svg|<\?xml/.test(s)) return 'SVG';
+  return 'unknown';
+}
+// Opens an image file; falls back to createImageBitmap, and explains failures in plain words.
+async function loadImage(f) {
+  const url = URL.createObjectURL(f);
+  try {
+    return await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+  } catch {
+    URL.revokeObjectURL(url);
+    try { return await createImageBitmap(f); } catch {}
+    const type = await realImageType(f);
+    throw new Error(type === 'HEIC' ? 'it is really an iPhone HEIC photo (just named .jpg), which browsers can\'t open. Open it and save or screenshot it as PNG/JPG, then add that'
+      : type === 'unknown' ? 'the file isn\'t a picture this browser recognises (it may be damaged or not fully downloaded)'
+      : `it's a ${type} file this browser couldn't open. Try saving it again as PNG or JPG`);
+  }
+}
 
 function scaledCopy(img) {
   const k = Math.min(1, 160 / Math.max(img.width, img.height)), c = document.createElement('canvas');
@@ -1423,8 +1448,8 @@ async function importStickers(files) {
     try {
       const img = await loadImage(f);
       for (const src of cutStickers(img)) await put('stickers', { id: crypto.randomUUID(), src, pack, created: Date.now() + n++ });
-      URL.revokeObjectURL(img.src);
-    } catch { toast(`${f.name} isn't an image`); }
+      if (img.src) URL.revokeObjectURL(img.src);
+    } catch (e) { toast(`Couldn't add ${f.name}: ${e && e.message || e}`); console.error(e); }
   }
   await loadMyStickers();
   if (n) toast(`Added ${n} sticker${n === 1 ? '' : 's'} as “${pack}”. Use “Make theme” in Aa → My stickers to turn it into a theme`);
