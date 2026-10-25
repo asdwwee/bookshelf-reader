@@ -375,11 +375,6 @@ body[data-margin="wide"] { --page-w: 600px; }
 .kawaii .empty::before, .kawaii .dropzone::before { content: ""; display: block; width: 72px; height: 72px; margin: 0 auto 8px; background: var(--mochi-sleepy) center / contain no-repeat; }
 .kawaii .ribbon-mark::after, .kawaii #bookmark .ribbon { font-size: 0; }
 .kawaii #bookmark .ribbon::before { content: ""; width: 30px; height: 30px; background: var(--mochi-joy) center / contain no-repeat; }
-/* Busy backgrounds (stickers, your image): soft frosted backing behind text that sits directly on the page */
-.kawaii :is(#library > .section-head, #quotes > .section-head, #clubsView > .section-head, .card) {
-  background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(3px); border-radius: 18px; }
-.kawaii #library > .section-head, .kawaii #quotes > .section-head, .kawaii #clubsView > .section-head { padding: 8px 14px; }
-.kawaii .card { padding: 8px 8px 10px; }
 .pack-row { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-top: 1px solid var(--border); }
 .pack-row:first-child { border-top: 0; }
 .pack-row img { width: 30px; height: 30px; object-fit: contain; }
@@ -419,7 +414,7 @@ body[data-margin="wide"] { --page-w: 600px; }
       <button data-v="on">Show</button><button data-v="off">Hide</button></div></div>
     <div class="group"><h4>Background</h4>
       <div class="inline-form"><select id="bgSel" aria-label="Background pattern">
-        <option value="auto">Theme default</option><option value="stickers">My stickers (repeating)</option><option value="none">Plain</option><option value="dots">Polka dots</option>
+        <option value="auto">Theme default</option><option value="none">Plain</option><option value="dots">Polka dots</option>
         <option value="meadow">Meadow</option><option value="sprinkle">Tiny dots</option><option value="mine">My image (repeats)</option></select>
         <button class="btn secondary" id="bgPick" hidden>Choose image</button></div>
       <input id="bgFile" type="file" accept="image/*" hidden></div>
@@ -634,39 +629,10 @@ const PATTERNS = {
   meadow: `url("data:image/svg+xml,${encodeURIComponent(MEADOW_SVG)}") 0 0 / 260px 260px`,
 };
 let bgImage = null; // your uploaded background, as a data URL
-
-// Your stickers as a seamless repeating tile: staggered grid, each one slightly tilted.
-const stickerTiles = new Map(); // cache key -> data URL
-async function stickerTile(ids) {
-  const key = ids.join();
-  if (stickerTiles.has(key)) return stickerTiles.get(key);
-  const n = ids.length > 16 ? 6 : 4, cell = 130, size = n * cell, fit = 92;
-  const c = document.createElement('canvas'); c.width = c.height = size;
-  const ctx = c.getContext('2d');
-  const imgs = await Promise.all(ids.map(id => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = myStickers.get(id); })));
-  let k = 0;
-  for (let r = 0; r < n; r++) for (let col = 0; col < n; col++, k++) {
-    const img = imgs[k % imgs.length]; if (!img) continue;
-    const s = fit / Math.max(img.width, img.height), w = img.width * s, h = img.height * s;
-    const x = col * cell + cell / 2 + (r % 2 ? cell / 2 : 0), y = r * cell + cell / 2, tilt = (((k * 37) % 25) - 12) * Math.PI / 180;
-    for (const dx of [0, -size]) { // stagger wraps around the right edge so the tile repeats seamlessly
-      ctx.save(); ctx.translate(x + dx, y); ctx.rotate(tilt); ctx.drawImage(img, -w / 2, -h / 2, w, h); ctx.restore();
-    }
-  }
-  const url = c.toDataURL('image/png');
-  stickerTiles.set(key, url);
-  return url;
-}
-
 function applyBackground() {
-  const kawaii = root.classList.contains('kawaii');
-  const auto = kawaii && myStickers.size ? 'stickers' : { usagi: 'dots', mochi: 'sprinkle', gio: 'sprinkle' }[prefs.theme] || (kawaii ? 'sprinkle' : 'none');
+  const auto = { usagi: 'dots', mochi: 'sprinkle', gio: 'sprinkle' }[prefs.theme] || (root.classList.contains('kawaii') ? 'sprinkle' : 'none');
   const kind = prefs.bg === 'auto' ? auto : prefs.bg;
-  if (kind === 'stickers') {
-    const p = themePack(), ids = p ? packStickers(p) : [...myStickers.keys()];
-    if (!ids.length) root.style.setProperty('--pattern', 'none');
-    else stickerTile(ids).then(url => { if ((prefs.bg === 'auto' ? auto : prefs.bg) === 'stickers') root.style.setProperty('--pattern', `url("${url}") 0 0 / ${ids.length > 16 ? 780 : 520}px`); });
-  } else root.style.setProperty('--pattern', kind === 'mine' ? (bgImage ? `url("${bgImage}") 0 0 / 360px auto` : 'none') : PATTERNS[kind] || 'none');
+  root.style.setProperty('--pattern', kind === 'mine' ? (bgImage ? `url("${bgImage}") 0 0 / 360px auto` : 'none') : PATTERNS[kind] || 'none');
   if ($('bgSel')) { $('bgSel').value = prefs.bg; $('bgPick').hidden = prefs.bg !== 'mine'; }
 }
 
