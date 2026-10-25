@@ -1076,10 +1076,10 @@ function addHighlight(cfi, color) {
 
 // ---- Annotations: notes + stickers dragged from the palette (or tap, then tap the text) ----
 const EMOJI_STICKERS = ['⭐', '❤️', '💡', '❓', '🔥', '😂', '📌'];
-// Your own stickers replace the Mochi pack in the palette once you've imported some.
+// Once you've imported your own stickers, the palette shows only those (no Mochi pack, no emoji).
 function renderPalette() {
   const mine = [...myStickers.keys()].map(id => 'img:' + id);
-  const list = [...(mine.length ? mine : Object.keys(MOCHI).map(k => 'svg:' + k)), ...EMOJI_STICKERS];
+  const list = mine.length ? mine : [...Object.keys(MOCHI).map(k => 'svg:' + k), ...EMOJI_STICKERS];
   $('paletteItems').innerHTML =
     `<button data-act="addstk" aria-label="Add your own stickers" title="Add your own stickers (images or a whole sticker sheet)">➕</button>` +
     `<button draggable="true" data-kind="note" data-emoji="📝" aria-label="Note" title="Note: drag onto the page">📝</button>` +
