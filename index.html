@@ -369,6 +369,17 @@ body[data-margin="wide"] { --page-w: 600px; }
 .kawaii .empty::before, .kawaii .dropzone::before { content: ""; display: block; width: 72px; height: 72px; margin: 0 auto 8px; background: var(--mochi-sleepy) center / contain no-repeat; }
 .kawaii .ribbon-mark::after, .kawaii #bookmark .ribbon { font-size: 0; }
 .kawaii #bookmark .ribbon::before { content: ""; width: 30px; height: 30px; background: var(--mochi-joy) center / contain no-repeat; }
+/* Sticker icons (cute themes): tabs, settings, Add books, Continue */
+.has-icons :is(.tab, #addBtn, .hero .btn) { display: inline-flex; align-items: center; gap: 6px; }
+.has-icons :is(.tab, #addBtn, .hero .btn)::before { content: ""; width: 24px; height: 24px; flex: none; background-position: center; background-size: contain; background-repeat: no-repeat; }
+.has-icons .tab[data-tab="library"]::before { background-image: var(--ic-library); }
+.has-icons .tab[data-tab="reader"]::before { background-image: var(--ic-reader); }
+.has-icons .tab[data-tab="quotes"]::before { background-image: var(--ic-quotes); }
+.has-icons .tab[data-tab="clubs"]::before { background-image: var(--ic-clubs); }
+.has-icons #addBtn::before { background-image: var(--ic-add); }
+.has-icons .hero .btn::before { background-image: var(--ic-continue); }
+.has-icons #settingsBtn { font-size: 0; width: 42px; height: 38px; background: var(--ic-settings) center / 28px no-repeat, var(--surface); }
+@media (max-width: 560px) { .has-icons .tab { font-size: 0; gap: 0; padding: 4px 8px; } .has-icons .tab::before { width: 28px; height: 28px; } }
 .pack-row { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-top: 1px solid var(--border); }
 .pack-row:first-child { border-top: 0; }
 .pack-row img { width: 30px; height: 30px; object-fit: contain; }
@@ -615,7 +626,12 @@ function applyDecor(pack = themePack()) {
   const mine = pack ? packStickers(pack).map(id => myStickers.get(id)) : [];
   const art = { happy: 'bunny', love: 'bunnylove', sleepy: 'bunnysleepy', joy: 'bunny' }; // without your stickers, the bunny critters decorate
   DECOR.forEach((k, i) => root.style.setProperty(`--mochi-${k}`, `url("${mine.length ? mine[[0, 16, 12, 22][i] % mine.length] : mochiURI(art[k] || k)}")`));
+  // Icons on the tabs and main buttons: the theme's stickers, or bunnies on the other cute themes.
+  const icons = mine.length ? mine : root.classList.contains('kawaii') ? ['bunny', 'bunnylove', 'bunnysleepy'].map(mochiURI) : [];
+  root.classList.toggle('has-icons', icons.length > 0);
+  ICON_SLOTS.forEach((slot, i) => icons.length ? root.style.setProperty(`--ic-${slot}`, `url("${icons[(i * 3 + 1) % icons.length]}")`) : root.style.removeProperty(`--ic-${slot}`));
 }
+const ICON_SLOTS = ['library', 'reader', 'quotes', 'clubs', 'settings', 'add', 'continue'];
 // ---- Repeating page backgrounds: drawn patterns, or your own image tiled (kept in this browser) ----
 const tuft = (x, y) => `<g transform="translate(${x} ${y})"><ellipse rx="13" ry="6" fill="url(#g)"/>` +
   `<path d="M-5 2l-1.5-6M0 2V-5M5 2l1.5-6" stroke="#5b4636" stroke-width="1.8" stroke-linecap="round"/></g>`;
